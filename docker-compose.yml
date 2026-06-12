@@ -1,0 +1,37 @@
+# FindMyMiners — self-hosted deployment.
+#
+# Two ways to reach your miners:
+#
+#  A) Dashboard ON the mining LAN (agentless scan):
+#     uncomment `network_mode: host` so the server can scan/control miners
+#     directly. With host networking, the `ports:` mapping is ignored — open
+#     http://<this-machine-ip>:3000. (Linux only.)
+#
+#  B) Dashboard hosted elsewhere:
+#     keep bridge networking (default below) and run the agent on the LAN
+#     (see agent/windows-miner-agent). Set AGENT_SHARED_KEY to authenticate it.
+
+services:
+  dashboard:
+    build: .
+    image: findmyminers:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    # network_mode: host   # <-- option A: agentless LAN scanning
+    environment:
+      - NODE_ENV=production
+      # Required to enable the agent push + command channel:
+      - AGENT_SHARED_KEY=${AGENT_SHARED_KEY:-}
+      # Optional alerting:
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
+      - ALERT_TELEGRAM_BOT_TOKEN=${ALERT_TELEGRAM_BOT_TOKEN:-}
+      - ALERT_TELEGRAM_CHAT_ID=${ALERT_TELEGRAM_CHAT_ID:-}
+      - ALERT_TEMP_THRESHOLD_C=${ALERT_TEMP_THRESHOLD_C:-90}
+      - ALERT_HASHRATE_DROP_RATIO=${ALERT_HASHRATE_DROP_RATIO:-0.7}
+    volumes:
+      # Persist telemetry history, config and the SQLite database.
+      - findmyminers-data:/app/data
+
+volumes:
+  findmyminers-data:

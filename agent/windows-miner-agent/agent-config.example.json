@@ -1,0 +1,19 @@
+{
+  "serverUrl": "https://ton-dashboard.com",
+  "agentKey": "CHANGE_ME_SAME_AS_AGENT_SHARED_KEY",
+  "agentId": "",
+  "orgId": "public",
+  "subnetPrefix": "192.168.1",
+  "subnetPrefixes": ["192.168.0", "192.168.1"],
+  "startHost": 1,
+  "endHost": 254,
+  "cgminerPort": 4028,
+  "intervalMs": 20000,
+  "versionCheckIntervalMs": 1800000,
+  "requestTimeoutMs": 2500,
+  "httpTimeoutMs": 2500,
+  "axeOsPorts": [80],
+  "maxConcurrentHosts": 30,
+  "minerIdPrefix": "miner",
+  "minerNamePrefix": "Miner"
+}
