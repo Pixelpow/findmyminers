@@ -73,6 +73,75 @@ export default function SettingsPage() {
   const [autoRebootEnabled, setAutoRebootEnabled] = useState(false);
   const [vacationModeEnabled, setVacationModeEnabled] = useState(false);
 
+  // Notifications push navigateur (records, pannes, événements importants)
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    setPushSupported(supported);
+    if (!supported) return;
+    (async () => {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        setPushEnabled(!!sub);
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const base64ToUint8Array = (value: string) => {
+    const padding = '='.repeat((4 - value.length % 4) % 4);
+    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = window.atob(base64);
+    return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
+  };
+
+  const togglePush = async () => {
+    if (!pushSupported || pushBusy) return;
+    setPushBusy(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) {
+        await fetch('/api/push/subscription', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: existing.endpoint }),
+        });
+        await existing.unsubscribe();
+        setPushEnabled(false);
+        toast('success', 'Notifications désactivées');
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast('warning', 'Permission refusée par le navigateur');
+        return;
+      }
+      const keyRes = await fetch('/api/push/public-key');
+      if (!keyRes.ok) throw new Error('Clé publique indisponible');
+      const { publicKey } = await keyRes.json();
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64ToUint8Array(publicKey),
+      });
+      await fetch('/api/push/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription }),
+      });
+      setPushEnabled(true);
+      toast('success', 'Notifications activées sur cet appareil');
+    } catch (error) {
+      toast('error', error instanceof Error ? error.message : 'Activation échouée');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (!router.isReady) return;
     const current = router.query.tab as string;
@@ -275,12 +344,12 @@ export default function SettingsPage() {
   };
 
   const tabMeta: Array<{ id: SettingsTab; label: string; icon: React.ComponentType<{ style?: React.CSSProperties }> }> = [
-    { id: 'general', label: 'General', icon: Settings2 },
-    { id: 'preferences', label: 'Preferences', icon: Sliders },
-    { id: 'night-mode', label: 'Night Mode', icon: Moon },
-    { id: 'automation', label: 'Automation', icon: RotateCcw },
+    { id: 'general', label: 'Général', icon: Settings2 },
+    { id: 'preferences', label: 'Préférences', icon: Sliders },
+    { id: 'night-mode', label: 'Mode nuit', icon: Moon },
+    { id: 'automation', label: 'Automatisation', icon: RotateCcw },
     { id: 'wallets', label: 'Wallets', icon: Wallet },
-    { id: 'members', label: 'Members', icon: Users },
+    { id: 'members', label: 'Membres', icon: Users },
     { id: 'agent', label: 'Agent', icon: Bot },
   ];
 
@@ -326,21 +395,21 @@ export default function SettingsPage() {
               <>
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-2)', marginBottom: 8 }}>Organization</div>
-                  <h2 style={{ margin: '0 0 8px', fontSize: 22, color: 'var(--foreground)' }}>Workspace identity</h2>
-                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Keep the workspace name clean and recognizable across the dashboard, alerts and agent pages.</p>
-                  <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Farm Name</label>
+                  <h2 style={{ margin: '0 0 8px', fontSize: 22, color: 'var(--foreground)' }}>Identité de l’espace</h2>
+                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Un nom propre et reconnaissable, repris sur le dashboard, les alertes et les pages agent.</p>
+                  <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Nom de la ferme</label>
                   <input value={orgName} onChange={(event) => setOrgName(event.target.value)} style={{ ...inputStyle, maxWidth: 440 }} />
                   <div style={{ marginTop: 18 }}>
-                    <button onClick={saveGeneral} disabled={savingGeneral} style={primaryButton}>{savingGeneral ? 'Saving...' : 'Save Settings'}</button>
+                    <button onClick={saveGeneral} disabled={savingGeneral} style={primaryButton}>{savingGeneral ? 'Enregistrement...' : 'Enregistrer'}</button>
                   </div>
                 </section>
 
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-2)', marginBottom: 8 }}>Deployment</div>
-                  <h2 style={{ margin: '0 0 8px', fontSize: 22, color: 'var(--foreground)' }}>Application version</h2>
-                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>This is the currently deployed dashboard version. Web app updates are deployed server-side and picked up automatically by the client.</p>
+                  <h2 style={{ margin: '0 0 8px', fontSize: 22, color: 'var(--foreground)' }}>Version de l’application</h2>
+                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Version du dashboard actuellement déployée. Les mises à jour sont appliquées côté serveur et récupérées automatiquement.</p>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
-                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>Dashboard build</span>
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>Build du dashboard</span>
                     <span style={{ fontSize: 13, color: 'var(--foreground)', fontWeight: 700 }}>{appVersion ? `v${appVersion}` : 'Unknown'}</span>
                   </div>
                 </section>
@@ -348,14 +417,14 @@ export default function SettingsPage() {
                 <section style={{ ...appCardStyle(28, '24px'), border: '1px solid rgba(248,113,113,0.18)', background: 'linear-gradient(180deg, rgba(53,18,21,0.55) 0%, rgba(21,13,16,0.92) 100%)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <ShieldAlert style={{ width: 16, height: 16, color: '#fca5a5' }} />
-                    <h2 style={{ margin: 0, fontSize: 20, color: 'var(--foreground)' }}>Danger zone</h2>
+                    <h2 style={{ margin: 0, fontSize: 20, color: 'var(--foreground)' }}>Zone dangereuse</h2>
                   </div>
-                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Reset miners and local configuration for this organization. This action cannot be undone.</p>
+                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Réinitialise les mineurs et la configuration locale de cette organisation. Action irréversible.</p>
                   {!deleteConfirm ? (
-                    <button style={{ ...ghostButton, border: '1px solid rgba(248,113,113,0.22)', color: '#fecaca', background: 'rgba(248,113,113,0.08)' }} onClick={() => setDeleteConfirm(true)}>Reset All Data</button>
+                    <button style={{ ...ghostButton, border: '1px solid rgba(248,113,113,0.22)', color: '#fecaca', background: 'rgba(248,113,113,0.08)' }} onClick={() => setDeleteConfirm(true)}>Tout réinitialiser</button>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 13, color: '#fca5a5' }}>Are you sure?</span>
+                      <span style={{ fontSize: 13, color: '#fca5a5' }}>Confirmer ?</span>
                       <button style={{ ...ghostButton, border: '1px solid rgba(248,113,113,0.22)', color: '#fecaca', background: 'rgba(248,113,113,0.08)' }} onClick={deleteOrg}>Yes, reset everything</button>
                       <button style={ghostButton} onClick={() => setDeleteConfirm(false)}>Cancel</button>
                     </div>
@@ -369,27 +438,27 @@ export default function SettingsPage() {
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <RotateCcw style={{ width: 18, height: 18, color: 'var(--accent-blue)' }} />
-                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Auto recovery</h2>
+                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Redémarrage automatique</h2>
                   </div>
-                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Automatically attempt a restart when a miner stays offline for more than five minutes.</p>
+                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Tente automatiquement un redémarrage quand un mineur reste hors ligne plus de cinq minutes.</p>
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--foreground)' }}>
                     <input type="checkbox" checked={autoRebootEnabled} onChange={(event) => setAutoRebootEnabled(event.target.checked)} style={{ width: 16, height: 16, accentColor: '#6aa7ff' }} />
-                    Enable auto-reboot on crash
+                    Activer le redémarrage auto en cas de panne
                   </label>
                 </section>
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <PlaneTakeoff style={{ width: 18, height: 18, color: 'var(--accent-blue)' }} />
-                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Vacation mode</h2>
+                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Mode vacances</h2>
                   </div>
-                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Pause recovery actions while you are away and make the fleet state explicit in the dashboard.</p>
+                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Suspend les actions de récupération pendant ton absence et l’affiche clairement sur le dashboard.</p>
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--foreground)' }}>
                     <input type="checkbox" checked={vacationModeEnabled} onChange={(event) => setVacationModeEnabled(event.target.checked)} style={{ width: 16, height: 16, accentColor: '#6aa7ff' }} />
-                    Enable vacation mode
+                    Activer le mode vacances
                   </label>
                 </section>
                 <div>
-                  <button onClick={saveAutomation} disabled={savingAutomation} style={primaryButton}>{savingAutomation ? 'Saving...' : 'Save Automation'}</button>
+                  <button onClick={saveAutomation} disabled={savingAutomation} style={primaryButton}>{savingAutomation ? 'Enregistrement...' : 'Enregistrer'}</button>
                 </div>
               </>
             )}
@@ -398,16 +467,16 @@ export default function SettingsPage() {
               <section style={appCardStyle(28, '24px')}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <Wallet style={{ width: 18, height: 18, color: 'var(--accent-strong)' }} />
-                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Payout wallets</h2>
+                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Wallets de paiement</h2>
                 </div>
-                <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Track multiple Bitcoin payout addresses directly from the dashboard and surface balances on the home screen.</p>
+                <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Suis plusieurs adresses Bitcoin directement depuis le dashboard, soldes affichés sur l’accueil.</p>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
                   <input value={walletAddress} onChange={(event) => setWalletAddress(event.target.value)} placeholder="bc1... or 1..." style={{ ...inputStyle, flex: 1, minWidth: 280 }} />
-                  <button style={primaryButton} onClick={addWallet}><Plus style={{ width: 14, height: 14, display: 'inline', marginRight: 6, verticalAlign: 'text-bottom' }} />Add wallet</button>
+                  <button style={primaryButton} onClick={addWallet}><Plus style={{ width: 14, height: 14, display: 'inline', marginRight: 6, verticalAlign: 'text-bottom' }} />Ajouter</button>
                 </div>
                 <div style={{ display: 'grid', gap: 10 }}>
                   {wallets.length === 0 ? (
-                    <div style={{ fontSize: 13.5, color: 'var(--muted-2)' }}>No wallet address tracked yet.</div>
+                    <div style={{ fontSize: 13.5, color: 'var(--muted-2)' }}>Aucune adresse suivie pour l’instant.</div>
                   ) : wallets.map((wallet) => (
                     <div key={wallet.address} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
                       <div style={{ minWidth: 0 }}>
@@ -427,36 +496,36 @@ export default function SettingsPage() {
               <section style={appCardStyle(28, '24px')}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <Moon style={{ width: 18, height: 18, color: '#c4b5fd' }} />
-                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Night schedule</h2>
+                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Planning nuit</h2>
                 </div>
-                <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Reduce noise and power during quiet hours by switching miners to a lower operating profile.</p>
+                <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Réduit le bruit et la consommation pendant les heures calmes en passant les mineurs en profil réduit.</p>
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--foreground)', marginBottom: 20 }}>
                   <input type="checkbox" checked={nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, enabled: event.target.checked })} style={{ width: 16, height: 16, accentColor: '#c4b5fd' }} />
-                  Enable night mode schedule
+                  Activer le planning nuit
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, opacity: nightSchedule.enabled ? 1 : 0.45 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Start hour</label>
+                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Heure de début</label>
                     <select value={nightSchedule.startHour} disabled={!nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, startHour: parseInt(event.target.value) })} style={inputStyle}>
                       {Array.from({ length: 24 }, (_, index) => <option key={index} value={index}>{String(index).padStart(2, '0')}:00</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>End hour</label>
+                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Heure de fin</label>
                     <select value={nightSchedule.endHour} disabled={!nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, endHour: parseInt(event.target.value) })} style={inputStyle}>
                       {Array.from({ length: 24 }, (_, index) => <option key={index} value={index}>{String(index).padStart(2, '0')}:00</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Fan speed (%)</label>
+                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Ventilation (%)</label>
                     <input type="number" min="0" max="100" disabled={!nightSchedule.enabled} value={nightSchedule.fanPercent} onChange={(event) => setNightSchedule({ ...nightSchedule, fanPercent: parseInt(event.target.value) || 0 })} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Work mode</label>
+                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Mode de fonctionnement</label>
                     <select value={nightSchedule.workMode} disabled={!nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, workMode: event.target.value })} style={inputStyle}>
-                      <option value="0">Low Power (Eco)</option>
+                      <option value="0">Éco (basse conso)</option>
                       <option value="1">Normal</option>
-                      <option value="2">High Performance</option>
+                      <option value="2">Haute performance</option>
                     </select>
                   </div>
                 </div>
@@ -466,7 +535,7 @@ export default function SettingsPage() {
                   </p>
                 )}
                 <div style={{ marginTop: 20 }}>
-                  <button onClick={saveNightSchedule} disabled={savingNight} style={primaryButton}>{savingNight ? 'Saving...' : 'Save Night Schedule'}</button>
+                  <button onClick={saveNightSchedule} disabled={savingNight} style={primaryButton}>{savingNight ? 'Enregistrement...' : 'Enregistrer'}</button>
                 </div>
               </section>
             )}
@@ -476,12 +545,12 @@ export default function SettingsPage() {
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <Users style={{ width: 18, height: 18, color: 'var(--accent-blue)' }} />
-                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Invite member</h2>
+                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Inviter un membre</h2>
                   </div>
-                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Send an invite by email and assign a role for team access.</p>
+                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Envoie une invitation par e-mail et attribue un rôle d’accès.</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 140px auto', gap: 12, alignItems: 'end' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Email address</label>
+                      <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Adresse e-mail</label>
                       <input value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="teammate@example.com" style={inputStyle} />
                     </div>
                     <div>
@@ -492,7 +561,7 @@ export default function SettingsPage() {
                         <option>Owner</option>
                       </select>
                     </div>
-                    <button style={primaryButton} onClick={() => { if (inviteEmail) { toast('success', `Invite sent to ${inviteEmail}`); setInviteEmail(''); } }}>Send Invite</button>
+                    <button style={primaryButton} onClick={() => { if (inviteEmail) { toast('success', `Invitation envoyée à ${inviteEmail}`); setInviteEmail(''); } }}>Envoyer l’invitation</button>
                   </div>
                 </section>
                 <section style={appCardStyle(28, '24px')}>
@@ -514,8 +583,8 @@ export default function SettingsPage() {
                       <button style={{ ...ghostButton, width: 40, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical style={{ width: 15, height: 15 }} /></button>
                     </div>
                   )}
-                  {membersTab === 'active' && !authUser && <p style={{ color: 'var(--muted-2)', fontSize: 13.5 }}>No members found. Log in to see members.</p>}
-                  {membersTab === 'pending' && <p style={{ color: 'var(--muted-2)', fontSize: 13.5 }}>No pending invitations.</p>}
+                  {membersTab === 'active' && !authUser && <p style={{ color: 'var(--muted-2)', fontSize: 13.5 }}>Aucun membre trouvé. Connecte-toi pour voir les membres.</p>}
+                  {membersTab === 'pending' && <p style={{ color: 'var(--muted-2)', fontSize: 13.5 }}>Aucune invitation en attente.</p>}
                 </section>
               </>
             )}
@@ -525,7 +594,7 @@ export default function SettingsPage() {
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 12 }}>
                     <div>
-                      <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Agent status</h2>
+                      <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Statut de l’agent</h2>
                       <p style={{ margin: '8px 0 0', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Real-time heartbeat for your local mining agent.</p>
                     </div>
                     {agentData && (
@@ -543,13 +612,13 @@ export default function SettingsPage() {
                       ['Hostname', agentData.hostname],
                       ['Public IP', agentData.publicIp],
                       ['Local IP', agentData.localIp],
-                      ['Last Online', agentData.lastSeen ? new Date(agentData.lastSeen).toLocaleString('fr-FR') : '—'],
+                      ['Vu en ligne', agentData.lastSeen ? new Date(agentData.lastSeen).toLocaleString('fr-FR') : '—'],
                     ].map(([label, value]) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
                         <span style={{ fontSize: 13, color: 'var(--muted)' }}>{label}</span>
                         <span style={{ fontSize: 13, color: 'var(--foreground)', fontWeight: 700 }}>{value || '—'}</span>
                       </div>
-                    )) : <div style={{ fontSize: 13.5, color: 'var(--muted-2)' }}>No agent connected. Install and link the agent to see status here.</div>}
+                    )) : <div style={{ fontSize: 13.5, color: 'var(--muted-2)' }}>Aucun agent connecté. Installe et relie l’agent pour voir son statut ici.</div>}
                     {agentData?.updateAvailable && (
                       <div style={{ padding: '14px 16px', borderRadius: 18, background: 'rgba(247,147,26,0.08)', border: '1px solid rgba(247,147,26,0.18)', color: 'var(--accent-strong)', fontSize: 13, fontWeight: 700 }}>
                         Update available: v{agentData.latestVersion || agentVersion}. Download the latest binary and run the Windows service update script.
@@ -560,10 +629,10 @@ export default function SettingsPage() {
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <Download style={{ width: 18, height: 18, color: 'var(--accent-strong)' }} />
-                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Download agent</h2>
+                    <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Télécharger l’agent</h2>
                   </div>
-                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Only needed for CGMiner devices or multi-network discovery. AxeOS miners can already be scanned directly from the dashboard.</p>
-                  {agentVersion && <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--muted)' }}>Latest version: <strong style={{ color: 'var(--foreground)' }}>v{agentVersion}</strong></p>}
+                  <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Nécessaire uniquement pour les appareils CGMiner ou la découverte multi-réseaux. Les mineurs AxeOS sont scannés directement depuis le dashboard.</p>
+                  {agentVersion && <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--muted)' }}>Dernière version : <strong style={{ color: 'var(--foreground)' }}>v{agentVersion}</strong></p>}
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[
                       ['win-x64', 'Windows (x64)'],
@@ -585,7 +654,7 @@ export default function SettingsPage() {
                       return <a key={platformKey} href={platform.downloadUrl} style={style}>{label}</a>;
                     })}
                   </div>
-                  <p style={{ margin: '14px 0 0', fontSize: 12.5, color: 'var(--muted-2)', lineHeight: 1.6 }}>For installed Windows services, run <strong style={{ color: 'var(--foreground)' }}>service/update-service.ps1</strong> after publishing a new agent build on the server.</p>
+                  <p style={{ margin: '14px 0 0', fontSize: 12.5, color: 'var(--muted-2)', lineHeight: 1.6 }}>Pour les services Windows installés, lance <strong style={{ color: 'var(--foreground)' }}>service/update-service.ps1</strong> après la publication d’un nouveau build de l’agent sur le serveur.</p>
                 </section>
               </>
             )}
@@ -593,27 +662,39 @@ export default function SettingsPage() {
             {tab === 'preferences' && (
               <>
                 <section style={appCardStyle(28, '24px')}>
-                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)', marginBottom: 20 }}>Display Preferences</h2>
+                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)', marginBottom: 20 }}>Notifications</h2>
                   <div style={{ display: 'grid', gap: 16 }}>
                     <div style={{ padding: '16px 18px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>Profitability Details (€)</div>
-                          <div style={{ fontSize: 13, color: 'var(--muted)' }}>Display estimated daily / monthly earnings on overview. Off by default for solo mining focus.</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>Notifications navigateur</div>
+                          <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                            Reçois une notification pour les nouveaux records de share, les mineurs qui tombent et les événements importants — même quand l&apos;onglet est fermé.
+                          </div>
+                          {!pushSupported && (
+                            <div style={{ fontSize: 12, color: 'var(--warning)', marginTop: 6 }}>
+                              Non supporté par ce navigateur (HTTPS ou localhost requis).
+                            </div>
+                          )}
                         </div>
-                        <div style={{ width: 40, height: 24, borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border-1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--muted)' }}>
-                          (localStorage)
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ padding: '16px 18px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>Browser Notifications</div>
-                          <div style={{ fontSize: 13, color: 'var(--muted)' }}>Receive alerts about new share records, miner status changes, and important events.</div>
-                        </div>
-                        <button style={{ height: 36, padding: '0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-1)', color: 'var(--muted)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
-                          (Manage in Dashboard)
+                        <button
+                          onClick={() => void togglePush()}
+                          disabled={!pushSupported || pushBusy}
+                          style={{
+                            height: 36,
+                            padding: '0 16px',
+                            borderRadius: 12,
+                            border: pushEnabled ? '1px solid rgba(74,222,128,0.3)' : '1px solid rgba(247,147,26,0.3)',
+                            background: pushEnabled ? 'rgba(74,222,128,0.12)' : 'rgba(247,147,26,0.12)',
+                            color: pushEnabled ? 'var(--success)' : 'var(--accent-strong)',
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            cursor: pushSupported && !pushBusy ? 'pointer' : 'not-allowed',
+                            opacity: pushSupported ? 1 : 0.5,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {pushBusy ? '...' : pushEnabled ? '✓ Activées — désactiver' : 'Activer'}
                         </button>
                       </div>
                     </div>

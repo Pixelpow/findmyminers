@@ -61,6 +61,8 @@ type FleetData = {
     powerW: number;
     avgTempC?: number;
   };
+  nightModeActive?: boolean;
+  vacationMode?: boolean;
 };
 
 type ProfitPayload = {
@@ -468,7 +470,19 @@ export default function DashboardPage() {
 
           {/* Table Toolbar */}
           <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-white/[0.01] shrink-0">
-            <h2 className="text-sm font-semibold text-slate-200">Mineurs actifs</h2>
+            <div className="flex items-center gap-3 min-w-0">
+              <h2 className="text-sm font-semibold text-slate-200 shrink-0">Mineurs actifs</h2>
+              {fleetData?.nightModeActive && (
+                <span className="text-[9px] font-mono font-semibold border px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border-blue-500/20" title="Le planning nuit (ventilation / mode réduit) est actuellement appliqué">
+                  🌙 MODE NUIT
+                </span>
+              )}
+              {fleetData?.vacationMode && (
+                <span className="text-[9px] font-mono font-semibold border px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border-amber-500/20" title="Mode vacances : l'auto-reboot et les automatismes sont suspendus">
+                  ✈ VACANCES
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
