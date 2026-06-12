@@ -19,6 +19,17 @@ const rebootAttempted: Record<string, number> = {};
 const AUTO_REBOOT_OFFLINE_MS = 5 * 60 * 1000; // 5 minutes
 const REBOOT_COOLDOWN_MS = 30 * 60 * 1000; // 30 min between reboot attempts
 
+/**
+ * Cache serveur par organisation : le dashboard (3 s), la page mineurs (10 s)
+ * et le layout (60 s) interrogent tous cette route — sans cache, chaque
+ * requête déclenche un poll TCP/HTTP complet du matériel. On sert le dernier
+ * snapshot pendant FLEET_CACHE_TTL_MS et on mutualise les requêtes
+ * concurrentes sur une seule promesse de poll.
+ */
+const FLEET_CACHE_TTL_MS = 3_000;
+const fleetCache = new Map<string, { ts: number; payload: unknown }>();
+const fleetInFlight = new Map<string, Promise<unknown>>();
+
 /** Estimate noise level in dB from fan RPM (rough approximation for ASIC miners). */
 function estimateNoisedB(fanRpm: number): number {
   if (!fanRpm || fanRpm <= 0) return 0;
@@ -60,6 +71,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const orgId = auth.organization.id;
 
   try {
+    const cached = fleetCache.get(orgId);
+    if (cached && Date.now() - cached.ts < FLEET_CACHE_TTL_MS) {
+      return res.status(200).json(cached.payload);
+    }
+
+    let pending = fleetInFlight.get(orgId);
+    if (!pending) {
+      pending = buildFleetPayload(orgId)
+        .then((payload) => {
+          fleetCache.set(orgId, { ts: Date.now(), payload });
+          return payload;
+        })
+        .finally(() => fleetInFlight.delete(orgId));
+      fleetInFlight.set(orgId, pending);
+    }
+
+    return res.status(200).json(await pending);
+  } catch (error) {
+    return res.status(500).json({ error: error instanceof Error ? error.message : 'Fleet overview failed' });
+  }
+}
+
+/** Poll complet de la flotte d'une organisation (matériel + stats + agrégats). */
+async function buildFleetPayload(orgId: string) {
+  {
     const config = await readDashboardConfig(orgId);
     // Backfill protocol for legacy miners so badges + control route correctly.
     const enabledMiners = await ensureMinerProtocols(orgId, config.miners.filter((m) => m.enabled));
@@ -235,7 +271,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    return res.status(200).json({
+    return {
       fleet,
       totals: {
         miners: fleet.length,
@@ -253,8 +289,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       nightModeActive,
       vacationMode: config.vacationMode?.enabled || false,
       autoReboot: config.autoReboot?.enabled || false,
-    });
-  } catch (error: any) {
-    return res.status(500).json({ error: error.message || 'Fleet overview failed' });
+    };
   }
 }

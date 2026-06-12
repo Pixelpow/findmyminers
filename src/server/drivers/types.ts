@@ -26,9 +26,48 @@ export type MinerCapability =
   | 'target-temp'
   | 'smart-speed'
   | 'switchpool'
+  | 'setpool'
   | 'led'
   | 'frequency'
   | 'voltage';
+
+/**
+ * Payload de l'action `setpool`, sérialisé en JSON dans `value`.
+ * Le driver reconfigure le pool primaire du mineur puis applique
+ * (restart AxeOS, addpool+switchpool CGMiner).
+ */
+export type SetPoolPayload = {
+  url: string;
+  user: string;
+  pass?: string;
+};
+
+/** Parse host/port d'une URL stratum (ex: stratum+tcp://pool.example.com:3333). */
+export function parseStratumUrl(url: string): { host: string; port: number } | null {
+  const match = url.trim().match(/^(?:[a-z+]+:\/\/)?([^:/\s]+)(?::(\d+))?/i);
+  if (!match || !match[1]) return null;
+  const port = match[2] ? parseInt(match[2], 10) : 3333;
+  if (!Number.isFinite(port) || port < 1 || port > 65535) return null;
+  return { host: match[1], port };
+}
+
+/** Désérialise la value JSON d'une action setpool, avec validation. */
+export function parseSetPoolValue(value?: string): SetPoolPayload {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value || '');
+  } catch {
+    throw new Error('setpool attend une value JSON { url, user, pass }');
+  }
+  const candidate = parsed as Partial<SetPoolPayload>;
+  if (!candidate || typeof candidate.url !== 'string' || !candidate.url.trim()) {
+    throw new Error('setpool : url du pool manquante');
+  }
+  if (typeof candidate.user !== 'string' || !candidate.user.trim()) {
+    throw new Error('setpool : wallet/worker manquant');
+  }
+  return { url: candidate.url.trim(), user: candidate.user.trim(), pass: candidate.pass || 'x' };
+}
 
 /** Canonical action names. A superset of `MinerCapability`. */
 export type DriverActionName = MinerCapability;

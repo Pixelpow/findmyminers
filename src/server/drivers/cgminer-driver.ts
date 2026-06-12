@@ -8,7 +8,7 @@
 import type { MinerSnapshot } from '@/server/telemetry-store';
 import { normaliseName } from './device-names';
 import { cgminerQuery, cgminerCommandStrict, DEFAULT_TCP_TIMEOUT_MS } from './transport';
-import type { DriverActionName, MinerDriver, MinerIdentity, PollResult } from './types';
+import { parseSetPoolValue, type DriverActionName, type MinerDriver, type MinerIdentity, type PollResult } from './types';
 
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
@@ -28,7 +28,7 @@ export function parseMMID0(mmId0String: string): Record<string, string> {
   return parsed;
 }
 
-function extractThermalFromDevs(devsData: any[]): { tempAvg: number; tempMax: number; fanRpm: number } {
+function extractThermalFromDevs(devsData: Array<Record<string, unknown>>): { tempAvg: number; tempMax: number; fanRpm: number } {
   const temps: number[] = [];
   const fans: number[] = [];
   for (const dev of devsData || []) {
@@ -50,8 +50,17 @@ function extractThermalFromDevs(devsData: any[]): { tempAvg: number; tempMax: nu
   };
 }
 
+type CgminerPoolEntry = {
+  POOL?: number;
+  URL?: string;
+  User?: string;
+  Status?: string;
+  'Stratum Active'?: boolean;
+  'Last Share Difficulty'?: number;
+};
+
 /** Read the `version` reply and infer model / firmware / device family. */
-function readIdentity(versionResp: any, ip: string, port: number): MinerIdentity | null {
+function readIdentity(versionResp: { VERSION?: Array<Record<string, unknown>> } | null, ip: string, port: number): MinerIdentity | null {
   const version = Array.isArray(versionResp?.VERSION) ? versionResp.VERSION[0] : null;
   if (!version) return null;
 
@@ -79,7 +88,7 @@ export const cgminerDriver: MinerDriver = {
   protocol: 'cgminer',
   label: 'CGMiner TCP',
   ports: [4028],
-  capabilities: ['reboot', 'fan', 'mode', 'target-temp', 'smart-speed', 'switchpool'],
+  capabilities: ['reboot', 'fan', 'mode', 'target-temp', 'smart-speed', 'switchpool', 'setpool'],
 
   async detect(ip, port, timeoutMs = DEFAULT_TCP_TIMEOUT_MS) {
     const versionResp = await cgminerQuery(ip, port, 'version', undefined, timeoutMs);
@@ -105,8 +114,8 @@ export const cgminerDriver: MinerDriver = {
     const minerStats = stats?.STATS?.[0] || {};
     const hardwareDetails = minerStats['MM ID0'] ? parseMMID0(minerStats['MM ID0']) : {};
 
-    const poolsData = pools?.POOLS || [];
-    const activePool = poolsData.find((p: any) => p['Stratum Active']) || poolsData[0];
+    const poolsData: CgminerPoolEntry[] = pools?.POOLS || [];
+    const activePool = poolsData.find((p) => p['Stratum Active']) || poolsData[0];
 
     const hashrateTHs = summaryData['MHS 1m'] ? summaryData['MHS 1m'] / 1_000_000 : 0;
     const mmTempAvg = toNumber(hardwareDetails.TAvg);
@@ -134,7 +143,7 @@ export const cgminerDriver: MinerDriver = {
       rejected: summaryData.Rejected || 0,
       accepted: summaryData.Accepted || 0,
       hardwareErrors: summaryData['Hardware Errors'] || 0,
-      poolAlive: poolsData.some((p: any) => p.Status === 'Alive' && p['Stratum Active'] === true),
+      poolAlive: poolsData.some((p) => p.Status === 'Alive' && p['Stratum Active'] === true),
     };
 
     return {
@@ -166,6 +175,19 @@ export const cgminerDriver: MinerDriver = {
       case 'switchpool':
         await cgminerCommandStrict(ip, port, 'switchpool', value ?? '0');
         return;
+      case 'setpool': {
+        const pool = parseSetPoolValue(value);
+        // Ajoute le pool puis bascule dessus (l'API cgminer n'a pas de "set" direct).
+        await cgminerCommandStrict(ip, port, 'addpool', `${pool.url},${pool.user},${pool.pass || 'x'}`);
+        const pools = await cgminerQuery(ip, port, 'pools');
+        const list: CgminerPoolEntry[] = pools?.POOLS || [];
+        const added = [...list].reverse().find((p) => (p.URL || '').trim() === pool.url);
+        if (added === undefined || added.POOL === undefined) {
+          throw new Error('Pool ajouté mais introuvable dans la liste — bascule manuelle nécessaire');
+        }
+        await cgminerCommandStrict(ip, port, 'switchpool', String(added.POOL));
+        return;
+      }
       case 'reboot':
         await cgminerCommandStrict(ip, port, 'ascset', '0,reboot,1');
         return;

@@ -34,6 +34,14 @@ export function controlMessage(action: MinerActionName, value?: string): string 
       return `Smart fan control ${value === '1' ? 'enabled' : 'disabled'}.`;
     case 'switchpool':
       return `Pool switch requested to slot ${value ?? 'unknown'}.`;
+    case 'setpool': {
+      try {
+        const pool = JSON.parse(value || '{}') as { url?: string };
+        return `Pool reconfiguré vers ${pool.url || 'endpoint inconnu'}.`;
+      } catch {
+        return 'Pool reconfiguré.';
+      }
+    }
     case 'frequency':
       return `Frequency set to ${value ?? 'unknown'} MHz.`;
     case 'voltage':

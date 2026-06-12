@@ -9,7 +9,7 @@
 import { pollAxeOs } from '@/server/axeos';
 import { normaliseName } from './device-names';
 import { httpGetJson, httpJsonRequest, DEFAULT_HTTP_TIMEOUT_MS } from './transport';
-import type { DriverActionName, MinerDriver, MinerIdentity, PollResult } from './types';
+import { parseSetPoolValue, parseStratumUrl, type DriverActionName, type MinerDriver, type MinerIdentity, type PollResult } from './types';
 
 const DEFAULT_AXEOS_PORT = 80;
 
@@ -17,7 +17,7 @@ export const axeosDriver: MinerDriver = {
   protocol: 'axeos',
   label: 'AxeOS HTTP',
   ports: [80],
-  capabilities: ['reboot', 'fan', 'smart-speed', 'frequency', 'voltage'],
+  capabilities: ['reboot', 'fan', 'smart-speed', 'frequency', 'voltage', 'setpool'],
 
   async detect(ip, port = DEFAULT_AXEOS_PORT, timeoutMs = 700): Promise<MinerIdentity | null> {
     const info = await httpGetJson(`http://${ip}:${port}/api/system/info`, timeoutMs);
@@ -93,6 +93,20 @@ export const axeosDriver: MinerDriver = {
         const mv = Number(value);
         if (!Number.isFinite(mv)) throw new Error('Core voltage must be a number (mV)');
         await httpJsonRequest(`${base}/api/system`, 'PATCH', { coreVoltage: mv });
+        return;
+      }
+      case 'setpool': {
+        const pool = parseSetPoolValue(value);
+        const endpoint = parseStratumUrl(pool.url);
+        if (!endpoint) throw new Error(`URL stratum invalide : ${pool.url}`);
+        await httpJsonRequest(`${base}/api/system`, 'PATCH', {
+          stratumURL: endpoint.host,
+          stratumPort: endpoint.port,
+          stratumUser: pool.user,
+          stratumPassword: pool.pass || 'x',
+        });
+        // AxeOS n'applique le nouveau stratum qu'après redémarrage.
+        await httpJsonRequest(`${base}/api/system/restart`, 'POST');
         return;
       }
       default:

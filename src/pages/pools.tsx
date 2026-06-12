@@ -15,7 +15,13 @@ import {
   Orbit,
   Droplet,
   X,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import { useToast } from '@/components/ToastProvider';
+import { getPollCache } from '@/lib/use-smart-polling';
 
 type Pool = {
   id: string;
@@ -35,6 +41,7 @@ const COLS = [
   { key: 'username', label: 'Worker', sortable: false },
   { key: 'password', label: 'Auth', sortable: false },
   { key: 'ping', label: 'Latence', sortable: true },
+  { key: 'apply', label: '', sortable: false },
 ];
 
 const ROW_OPTIONS = [10, 25, 50, 100];
@@ -74,6 +81,9 @@ function guessCoin(pool: Pool): 'BTC' | 'BCH' {
   return haystack.includes('bch') || haystack.includes('bitcoin cash') || haystack.includes('molepool') ? 'BCH' : 'BTC';
 }
 
+type ApplyTarget = { id: string; name: string; model?: string; online?: boolean };
+type ApplyResult = { minerId: string; name: string; ok: boolean; queued?: boolean; error?: string };
+
 /**
  * Logos officiels — Bitcoin : ₿ blanc penché à droite sur disque orange ;
  * Bitcoin Cash : même ₿ penché à gauche sur disque vert (#0AC18E).
@@ -103,6 +113,7 @@ function latencyMeta(value: number | null | undefined) {
 }
 
 export default function PoolsPage() {
+  const { toast } = useToast();
   const [pools, setPools] = useState<Pool[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [search, setSearch] = useState('');
@@ -116,6 +127,68 @@ export default function PoolsPage() {
   const [pinging, setPinging] = useState(false);
   const [presetPings, setPresetPings] = useState<Record<string, number | null>>({});
   const presetPingInFlight = useRef(false);
+
+  // Modal « Appliquer aux mineurs »
+  const [applyPool, setApplyPool] = useState<Pool | null>(null);
+  const [applyTargets, setApplyTargets] = useState<ApplyTarget[]>([]);
+  const [applySelected, setApplySelected] = useState<Set<string>>(new Set());
+  const [applyWorker, setApplyWorker] = useState('');
+  const [applyBusy, setApplyBusy] = useState(false);
+  const [applyResults, setApplyResults] = useState<ApplyResult[] | null>(null);
+
+  const openApplyModal = async (pool: Pool) => {
+    setApplyPool(pool);
+    setApplyWorker(pool.username || '');
+    setApplyResults(null);
+    setApplyBusy(false);
+    // Le cache fleet donne noms + statut en ligne instantanément.
+    const cachedFleet = getPollCache<{ fleet?: Array<{ id: string; name: string; model?: string; online?: boolean }> }>('fleet');
+    const fromCache = (cachedFleet?.fleet || []).map((m) => ({ id: m.id, name: m.name, model: m.model, online: m.online }));
+    if (fromCache.length) {
+      setApplyTargets(fromCache);
+      setApplySelected(new Set(fromCache.map((m) => m.id)));
+      return;
+    }
+    try {
+      const res = await fetch('/api/miner/config');
+      if (!res.ok) return;
+      const json = await res.json();
+      const list: ApplyTarget[] = (json.miners || []).map((m: { id: string; name: string; model?: string }) => ({ id: m.id, name: m.name, model: m.model }));
+      setApplyTargets(list);
+      setApplySelected(new Set(list.map((m) => m.id)));
+    } catch { /* ignore */ }
+  };
+
+  const runApply = async () => {
+    if (!applyPool || !applySelected.size || applyBusy) return;
+    if (!applyWorker.trim()) {
+      toast('warning', 'Renseigne le wallet.worker avant d’appliquer');
+      return;
+    }
+    setApplyBusy(true);
+    setApplyResults(null);
+    try {
+      const res = await fetch('/api/pools/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          minerIds: [...applySelected],
+          pool: { url: applyPool.url, user: applyWorker.trim(), pass: applyPool.password || 'x' },
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Application échouée');
+      const results = (json.results || []) as ApplyResult[];
+      setApplyResults(results);
+      const okCount = results.filter((r) => r.ok).length;
+      toast(okCount === results.length ? 'success' : okCount > 0 ? 'warning' : 'error',
+        `Pool appliqué sur ${okCount}/${results.length} mineur${results.length > 1 ? 's' : ''}`);
+    } catch (error) {
+      toast('error', error instanceof Error ? error.message : 'Application échouée');
+    } finally {
+      setApplyBusy(false);
+    }
+  };
 
   // Ping les pools du catalogue à chaque ouverture de la modal,
   // pour afficher la latence réelle à côté de chaque choix rapide.
@@ -436,6 +509,16 @@ export default function PoolsPage() {
                       );
                     })()}
                   </td>
+                  <td className="py-3 px-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => void openApplyModal(pool)}
+                      className="focus-ring inline-flex items-center gap-1.5 text-[11px] font-sans font-semibold px-2.5 py-1.5 rounded bg-btc-500/10 text-btc-500 border border-btc-500/25 hover:bg-btc-500/20 transition-colors"
+                      title="Pousser ce pool sur des mineurs de la flotte"
+                    >
+                      <Send className="w-3 h-3" /> Appliquer
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -643,6 +726,141 @@ export default function PoolsPage() {
                   Enregistrer le pool
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal « Appliquer aux mineurs » */}
+      {applyPool && (
+        <div
+          className="fixed inset-0 z-[80] bg-obsidian-950/85 backdrop-blur-lg grid place-items-center p-5"
+          onClick={() => { if (!applyBusy) setApplyPool(null); }}
+          role="presentation"
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-[560px] bg-obsidian-900 border border-white/10 rounded-xl shadow-[0_40px_120px_rgba(0,0,0,0.7),0_0_80px_-30px_rgba(255,153,0,0.25)] overflow-hidden"
+            role="dialog"
+            aria-label="Appliquer le pool aux mineurs"
+          >
+            <div className="h-1 bg-gradient-to-r from-btc-700 via-btc-500 to-btc-700" />
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.01]">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-lg bg-btc-500/10 border border-btc-500/25 flex items-center justify-center shrink-0">
+                  <Send className="w-4.5 h-4.5 text-btc-500" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-base font-semibold text-slate-100 m-0 leading-tight truncate flex items-center gap-2">
+                    <CoinIcon coin={guessCoin(applyPool)} size={16} /> Appliquer « {applyPool.name} »
+                  </h2>
+                  <p className="text-[11px] text-slate-500 font-mono m-0 truncate">{applyPool.url}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { if (!applyBusy) setApplyPool(null); }}
+                className="focus-ring p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors shrink-0"
+                aria-label="Fermer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <label className="grid gap-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Wallet / Worker poussé sur les mineurs</span>
+                <input
+                  value={applyWorker}
+                  onChange={(event) => setApplyWorker(event.target.value)}
+                  placeholder="wallet.worker1"
+                  className="focus-ring bg-obsidian-950 border border-white/10 rounded-lg py-2.5 px-3.5 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:border-btc-500/40"
+                />
+              </label>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                    Mineurs cibles ({applySelected.size}/{applyTargets.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setApplySelected(applySelected.size === applyTargets.length ? new Set() : new Set(applyTargets.map((m) => m.id)))}
+                    className="focus-ring text-[10px] font-semibold text-btc-500 hover:text-white transition-colors"
+                  >
+                    {applySelected.size === applyTargets.length ? 'Tout décocher' : 'Tout cocher'}
+                  </button>
+                </div>
+                <div className="grid gap-1 max-h-48 overflow-y-auto pr-1">
+                  {applyTargets.length === 0 && (
+                    <div className="text-xs text-slate-600 font-sans py-2">Chargement des mineurs...</div>
+                  )}
+                  {applyTargets.map((miner) => {
+                    const checked = applySelected.has(miner.id);
+                    const result = applyResults?.find((r) => r.minerId === miner.id);
+                    return (
+                      <label
+                        key={miner.id}
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg border cursor-pointer transition-colors ${
+                          checked ? 'bg-btc-500/5 border-btc-500/20' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) => {
+                            const next = new Set(applySelected);
+                            if (event.target.checked) next.add(miner.id); else next.delete(miner.id);
+                            setApplySelected(next);
+                          }}
+                          className="cursor-pointer accent-[#FF9900]"
+                        />
+                        {miner.online !== undefined && (
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${miner.online ? 'bg-emerald-500 dot-glow-emerald' : 'bg-slate-600'}`} />
+                        )}
+                        <span className="text-xs font-sans font-medium text-slate-200 truncate flex-1">
+                          {miner.name} {miner.model && <span className="text-slate-500 font-normal">· {miner.model}</span>}
+                        </span>
+                        {result && (
+                          result.ok ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 shrink-0">
+                              <CheckCircle2 className="w-3 h-3" /> {result.queued ? 'En file (agent)' : 'OK'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-rose-400 shrink-0" title={result.error}>
+                              <AlertCircle className="w-3 h-3" /> Échec
+                            </span>
+                          )
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <p className="text-[10px] text-amber-400/80 font-sans m-0">
+                ⚠ Chaque mineur redémarre pour appliquer le nouveau pool — quelques secondes d&apos;interruption du hash.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2.5 px-6 py-4 border-t border-white/5 bg-white/[0.01]">
+              <button
+                type="button"
+                onClick={() => setApplyPool(null)}
+                disabled={applyBusy}
+                className="focus-ring text-xs font-semibold px-5 py-2.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+              >
+                {applyResults ? 'Fermer' : 'Annuler'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void runApply()}
+                disabled={applyBusy || !applySelected.size || !applyWorker.trim()}
+                className="focus-ring text-xs font-bold px-5 py-2.5 rounded-lg bg-btc-500 text-obsidian-950 hover:bg-btc-400 transition-all active:scale-95 disabled:opacity-40 shadow-[0_4px_20px_-4px_rgba(255,153,0,0.4)] inline-flex items-center gap-2"
+              >
+                {applyBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {applyBusy ? 'Application...' : `Appliquer sur ${applySelected.size} mineur${applySelected.size > 1 ? 's' : ''}`}
+              </button>
             </div>
           </div>
         </div>
