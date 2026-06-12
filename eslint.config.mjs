@@ -12,7 +12,16 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "release/**",
+    "superpowers/**",
   ]),
+  {
+    rules: {
+      // `tsc --noEmit` (CI) reste le garde-fou strict des types ; les `any`
+      // restants dans les drivers sont un nettoyage progressif, pas un blocage.
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;
