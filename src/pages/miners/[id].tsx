@@ -149,7 +149,7 @@ function Sparkline({
 
 function HealthGauge({ score }: { score: number }) {
   const color = score >= 80 ? '#4ade80' : score >= 60 ? '#fb923c' : score >= 40 ? '#f59e0b' : '#f87171';
-  const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Poor';
+  const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Bon' : score >= 40 ? 'Moyen' : 'Faible';
   const circumference = 2 * Math.PI * 40;
   const offset = circumference - (score / 100) * circumference;
 
@@ -390,6 +390,7 @@ export default function MinerDetailPage() {
   };
 
   const FAN_PRESETS = { low: 30, medium: 60, high: 100 } as const;
+  const FAN_LABELS = { low: 'Basse', medium: 'Moyenne', high: 'Haute' } as const;
 
   const setFanPreset = async (preset: 'low' | 'medium' | 'high') => {
     setFanLoading(true);
@@ -406,7 +407,7 @@ export default function MinerDetailPage() {
       }
       setFanMode(preset);
       setAutoMode(false);
-      setFanFeedback(`Fan → ${preset.charAt(0).toUpperCase() + preset.slice(1)} (${FAN_PRESETS[preset]}%)`);
+      setFanFeedback(`Ventilation → ${FAN_LABELS[preset]} (${FAN_PRESETS[preset]}%)`);
     } catch (e: any) {
       setFanFeedback(`Erreur: ${e.message}`);
     } finally {
@@ -416,9 +417,9 @@ export default function MinerDetailPage() {
   };
 
   const PERF_PRESETS = {
-    low: { value: '0', watt: 65, label: 'Low', emoji: '🍃', desc: 'Eco · 65W' },
-    normal: { value: '1', watt: 90, label: 'Normal', emoji: '⚡', desc: 'Standard · 90W' },
-    high: { value: '2', watt: 140, label: 'High', emoji: '🔥', desc: 'Performance · 140W' },
+    low: { value: '0', watt: 65, label: 'Éco', emoji: '🍃', desc: 'Silencieux · 65 W' },
+    normal: { value: '1', watt: 90, label: 'Normal', emoji: '⚡', desc: 'Standard · 90 W' },
+    high: { value: '2', watt: 140, label: 'Perf', emoji: '🔥', desc: 'Performance · 140 W' },
   } as const;
 
   const setPerformanceProfile = async (preset: 'low' | 'normal' | 'high') => {
@@ -519,7 +520,7 @@ export default function MinerDetailPage() {
   );
 
   if (loading && !data) {
-    return <div style={{ padding: 40, color: 'var(--muted)', fontSize: 14 }}>Loading…</div>;
+    return <div style={{ padding: 40, color: 'var(--muted)', fontSize: 14 }}>Chargement…</div>;
   }
 
   const eventColor = (severity: MinerEvent['severity']) => {
@@ -530,17 +531,17 @@ export default function MinerDetailPage() {
   };
 
   const eventLabel = (event: MinerEvent) => {
-    if (event.category === 'alert') return 'Alert';
+    if (event.category === 'alert') return 'Alerte';
     if (event.category === 'maintenance') return 'Maintenance';
     if (event.category === 'action') return 'Action';
-    return 'System';
+    return 'Système';
   };
 
   const formatEventTime = (ts: number) => {
     const diffMs = Date.now() - ts;
-    if (diffMs < 60_000) return 'just now';
-    if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
-    if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)}h ago`;
+    if (diffMs < 60_000) return 'à l’instant';
+    if (diffMs < 3_600_000) return `il y a ${Math.floor(diffMs / 60_000)} min`;
+    if (diffMs < 86_400_000) return `il y a ${Math.floor(diffMs / 3_600_000)} h`;
     return new Date(ts).toLocaleString();
   };
 
@@ -564,12 +565,12 @@ export default function MinerDetailPage() {
                 color: isOnline ? '#4ade80' : '#f87171',
                 border: `1px solid ${isOnline ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
               }}>
-                {isOnline ? 'Online' : 'Offline'}
+                {isOnline ? 'En ligne' : 'Hors ligne'}
               </span>
               <div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--foreground)' }}>{miner?.name || String(id)}</div>
                 <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>
-                  {data?.model || miner?.model || 'Unknown model'} · SHA256
+                  {data?.model || miner?.model || 'Modèle inconnu'} · SHA256
                 </div>
               </div>
             </div>
@@ -577,7 +578,7 @@ export default function MinerDetailPage() {
               <button onClick={restart} disabled={actionLoading}
                 style={{ height: 40, padding: '0 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-1)', borderRadius: 14, color: 'var(--foreground)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
                 <RefreshCw style={{ width: 13, height: 13 }} />
-                {actionLoading ? '…' : 'Restart'}
+                {actionLoading ? '…' : 'Redémarrer'}
               </button>
               <button style={{ width: 40, height: 40, padding: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-1)', borderRadius: 14, color: 'var(--muted)', cursor: 'pointer' }}>
                 <MoreHorizontal style={{ width: 16, height: 16 }} />
@@ -608,15 +609,15 @@ export default function MinerDetailPage() {
           <div style={{ borderTop: '1px solid var(--border-1)', marginTop: 18, paddingTop: 18 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0 }}>
               <div style={{ borderRight: '1px solid var(--border-1)', paddingRight: 24 }}>
-                <div style={labelStyle}>MAC Address</div>
+                <div style={labelStyle}>Adresse MAC</div>
                 <div style={valueStyle}>{hardware?.MAC || '—'}</div>
               </div>
               <div style={{ borderRight: '1px solid var(--border-1)', padding: '0 24px' }}>
-                <div style={labelStyle}>Adapter</div>
+                <div style={labelStyle}>Modèle</div>
                 <div style={valueStyle}>{data?.model || miner?.model || miner?.name || '—'}</div>
               </div>
               <div style={{ paddingLeft: 24 }}>
-                <div style={labelStyle}>IP Address</div>
+                <div style={labelStyle}>Adresse IP</div>
                 <div style={valueStyle}>{miner?.ip || '—'}</div>
               </div>
             </div>
@@ -625,30 +626,30 @@ export default function MinerDetailPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', marginBottom: 16, gap: 8, flexWrap: 'wrap' }}>
-          {tabBtn('status', 'Status')}
-          {tabBtn('charts', 'Charts')}
-          {tabBtn('timeline', 'Timeline')}
-          {tabBtn('settings', 'Settings')}
+          {tabBtn('status', 'Statut')}
+          {tabBtn('charts', 'Graphiques')}
+          {tabBtn('timeline', 'Historique')}
+          {tabBtn('settings', 'Réglages')}
         </div>
 
         {tab === 'status' && (
           <div style={cardStyle}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0, paddingBottom: 18 }}>
               <div style={{ borderRight: '1px solid #27272a', paddingRight: 24 }}>
-                <div style={labelStyle}>Temperature</div>
+                <div style={labelStyle}>Température</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: tempAvg > 90 ? '#f87171' : tempAvg > 80 ? '#fb923c' : '#fafafa' }}>
                   {tempAvg > 0 ? `${tempAvg.toFixed(0)}°C` : '—'}
                 </div>
               </div>
               <div style={{ borderRight: '1px solid #27272a', padding: '0 24px' }}>
-                <div style={labelStyle}>Power Draw</div>
+                <div style={labelStyle}>Consommation</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#fafafa' }}>
                   {powerW > 0 ? `${powerW.toFixed(0)} ` : '—'}<span style={{ fontSize: 14, fontWeight: 400, color: '#71717a' }}>W</span>
                 </div>
-                {hardware?.MPO && <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 2 }}>Limit: {hardware.MPO} W</div>}
+                {hardware?.MPO && <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 2 }}>Limite : {hardware.MPO} W</div>}
               </div>
               <div style={{ paddingLeft: 24 }}>
-                <div style={labelStyle}>Fan Speed</div>
+                <div style={labelStyle}>Ventilation</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#fafafa' }}>
                   {fanPct > 0 ? `${fanPct}` : '—'}<span style={{ fontSize: 14, fontWeight: 400, color: '#71717a' }}>%</span>
                 </div>
@@ -659,7 +660,7 @@ export default function MinerDetailPage() {
             {/* Live Fan Speed */}
             {isOnline && (fanRpm > 0 || fanPct > 0) && (
               <div style={{ borderTop: '1px solid #27272a', marginTop: 18, paddingTop: 16 }}>
-                <div style={{ ...labelStyle, marginBottom: 10 }}>Fan Speed (live)</div>
+                <div style={{ ...labelStyle, marginBottom: 10 }}>Ventilation (live)</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ position: 'relative', width: 64, height: 64 }}>
                     <svg width="64" height="64" viewBox="0 0 64 64">
@@ -683,7 +684,7 @@ export default function MinerDetailPage() {
                       </div>
                     )}
                     <div style={{ fontSize: 11, color: '#52525b', marginTop: 2 }}>
-                      {autoMode ? '🤖 Auto' : fanMode ? `Manuel · ${fanMode.charAt(0).toUpperCase() + fanMode.slice(1)}` : 'Manuel'}
+                      {autoMode ? '🤖 Auto' : fanMode ? `Manuel · ${FAN_LABELS[fanMode]}` : 'Manuel'}
                     </div>
                   </div>
                 </div>
@@ -694,7 +695,7 @@ export default function MinerDetailPage() {
             {isOnline && data?.source !== 'axeos' && (
               <div style={{ borderTop: '1px solid #27272a', marginTop: 18, paddingTop: 16 }}>
                 <div style={{ ...labelStyle, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Fan Control
+                  Contrôle ventilation
                   {fanLoading && (
                     <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #27272a', borderTopColor: '#f7931a', animation: 'spin 0.8s linear infinite' }} />
                   )}
@@ -719,7 +720,7 @@ export default function MinerDetailPage() {
                           opacity: fanLoading ? 0.6 : 1,
                         }}>
                         <span style={{ fontSize: 16 }}>{c.emoji}</span>
-                        <div style={{ marginTop: 2 }}>{preset.charAt(0).toUpperCase() + preset.slice(1)}</div>
+                        <div style={{ marginTop: 2 }}>{FAN_LABELS[preset]}</div>
                         <div style={{ fontSize: 10.5, fontWeight: 400, marginTop: 1, color: '#52525b' }}>
                           {FAN_PRESETS[preset]}%
                         </div>
@@ -744,13 +745,13 @@ export default function MinerDetailPage() {
             {isOnline && data?.source !== 'axeos' && (
               <div style={{ borderTop: '1px solid #27272a', marginTop: 18, paddingTop: 16 }}>
                 <div style={{ ...labelStyle, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Performance Profile
+                  Profil de performance
                   {perfLoading && (
                     <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #27272a', borderTopColor: '#f7931a', animation: 'spin 0.8s linear infinite' }} />
                   )}
                   {detectedPerfMode && !perfMode && (
                     <span style={{ fontSize: 10.5, color: '#52525b', fontWeight: 400 }}>
-                      Actuel: {detectedPerfMode === 'low' ? 'Low' : detectedPerfMode === 'high' ? 'High' : 'Normal'}
+                      Actuel : {detectedPerfMode === 'low' ? 'Éco' : detectedPerfMode === 'high' ? 'Perf' : 'Normal'}
                     </span>
                   )}
                 </div>
@@ -800,7 +801,7 @@ export default function MinerDetailPage() {
             {isOnline && data?.source !== 'axeos' && (
               <div style={{ borderTop: '1px solid #27272a', marginTop: 18, paddingTop: 16 }}>
                 <div style={{ ...labelStyle, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Auto Mode
+                  Mode auto
                   {autoLoading && (
                     <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #27272a', borderTopColor: '#f7931a', animation: 'spin 0.8s linear infinite' }} />
                   )}
@@ -820,7 +821,7 @@ export default function MinerDetailPage() {
                     <div style={{ textAlign: 'left' }}>
                       <div>{autoMode ? 'Auto activé' : 'Activer Auto'}</div>
                       <div style={{ fontSize: 10.5, fontWeight: 400, color: '#52525b', marginTop: 1 }}>
-                        Smart fan + Target 75°C
+                        Ventilation auto + cible 75°C
                       </div>
                     </div>
                     <div style={{
@@ -853,7 +854,7 @@ export default function MinerDetailPage() {
             {chipTemps.length > 0 && (
               <>
                 <div style={{ borderTop: '1px solid #27272a', paddingTop: 16 }}>
-                  <div style={{ ...labelStyle, marginBottom: 10 }}>ASIC chip temps ({chipTemps.length} chips)</div>
+                  <div style={{ ...labelStyle, marginBottom: 10 }}>Températures des puces ({chipTemps.length} puces)</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                     {chipTemps.map((t, i) => (
                       <span key={i} style={{
@@ -869,7 +870,7 @@ export default function MinerDetailPage() {
             )}
 
             <div style={{ borderTop: '1px solid #27272a', marginTop: 18, paddingTop: 16 }}>
-              <div style={{ ...labelStyle, marginBottom: 10 }}>Maintenance insights</div>
+              <div style={{ ...labelStyle, marginBottom: 10 }}>Diagnostic maintenance</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {(data?.maintenanceInsights || []).map((insight) => {
                   const colors = insightColor(insight.severity);
@@ -889,37 +890,37 @@ export default function MinerDetailPage() {
                   );
                 })}
                 {!data?.maintenanceInsights?.length && (
-                  <div style={{ fontSize: 12.5, color: '#52525b' }}>No maintenance insights available yet.</div>
+                  <div style={{ fontSize: 12.5, color: '#52525b' }}>Aucun diagnostic de maintenance pour l’instant.</div>
                 )}
               </div>
             </div>
 
             <div style={{ borderTop: '1px solid #27272a', marginTop: 18, paddingTop: 16 }}>
-              <div style={{ ...labelStyle, marginBottom: 10 }}>Diff records database</div>
+              <div style={{ ...labelStyle, marginBottom: 10 }}>Records de difficulté</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
                 <div style={{ background: '#0f0f12', border: '1px solid #27272a', borderRadius: 10, padding: '12px 14px' }}>
-                  <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Miner best diff</div>
+                  <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Meilleur diff du mineur</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: '#fafafa' }}>{fmtDiff(data?.diffRecords?.minerRecord?.bestDiff)}</div>
-                  <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 4 }}>{data?.diffRecords?.minerRecord?.bestDiffAccountKey || 'No account yet'}</div>
+                  <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 4 }}>{data?.diffRecords?.minerRecord?.bestDiffAccountKey || 'Aucun compte'}</div>
                 </div>
                 <div style={{ background: '#0f0f12', border: '1px solid #27272a', borderRadius: 10, padding: '12px 14px' }}>
-                  <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Miner last diff</div>
+                  <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Dernier diff du mineur</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: '#fafafa' }}>{fmtDiff(data?.diffRecords?.minerRecord?.lastDiff)}</div>
                   <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 4 }}>{fmtWhen(data?.diffRecords?.minerRecord?.lastDiffAt)}</div>
                 </div>
                 <div style={{ background: '#0f0f12', border: '1px solid #27272a', borderRadius: 10, padding: '12px 14px' }}>
-                  <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Fleet best diff</div>
+                  <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Meilleur diff de la flotte</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: '#fafafa' }}>{fmtDiff(data?.diffRecords?.globalRecord?.bestDiff)}</div>
-                  <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 4 }}>{data?.diffRecords?.globalRecord?.bestDiffMinerName || 'No fleet record yet'}</div>
+                  <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 4 }}>{data?.diffRecords?.globalRecord?.bestDiffMinerName || 'Aucun record flotte'}</div>
                 </div>
               </div>
 
               {data?.diffRecords?.accountRecords?.length ? (
                 <div style={{ border: '1px solid #27272a', borderRadius: 10, overflow: 'hidden' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 0.8fr', gap: 12, padding: '10px 14px', background: '#111114', color: '#71717a', fontSize: 11.5, fontWeight: 600 }}>
-                    <div>Account / Address</div>
-                    <div>Best diff</div>
-                    <div>Last diff</div>
+                    <div>Compte / Adresse</div>
+                    <div>Meilleur diff</div>
+                    <div>Dernier diff</div>
                     <div>Pool</div>
                   </div>
                   {data.diffRecords.accountRecords.map((record) => (
@@ -943,7 +944,7 @@ export default function MinerDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12.5, color: '#52525b' }}>No diff records stored yet for this miner.</div>
+                <div style={{ fontSize: 12.5, color: '#52525b' }}>Aucun record de diff enregistré pour ce mineur.</div>
               )}
             </div>
           </div>
@@ -960,7 +961,7 @@ export default function MinerDetailPage() {
                 color: '#71717a', fontSize: 14,
               }}
             >
-              <span>Advanced stats</span>
+              <span>Stats avancées</span>
               {advancedOpen ? <ChevronUp style={{ width: 16, height: 16 }} /> : <ChevronDown style={{ width: 16, height: 16 }} />}
             </button>
             {advancedOpen && (
@@ -968,13 +969,13 @@ export default function MinerDetailPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 32px' }}>
                   {[
                     ['Pool URL', activePool?.URL || '—'],
-                    ['Pool Status', activePool?.Status || '—'],
-                    ['Stratum Active', activePool?.['Stratum Active'] ? 'Yes' : 'No'],
-                    ['Last Share Diff', activePool?.['Last Share Difficulty']?.toLocaleString() || '—'],
-                    ['Best Share', summary?.['Best Share']?.toLocaleString() || '—'],
-                    ['Hardware Errors', summary?.['Hardware Errors']?.toString() || '0'],
-                    ['Difficulty Accepted', summary?.['Difficulty Accepted']?.toFixed(0) || '—'],
-                    ['Difficulty Rejected', summary?.['Difficulty Rejected']?.toFixed(0) || '—'],
+                    ['Statut du pool', activePool?.Status || '—'],
+                    ['Stratum actif', activePool?.['Stratum Active'] ? 'Oui' : 'Non'],
+                    ['Diff du dernier share', activePool?.['Last Share Difficulty']?.toLocaleString() || '—'],
+                    ['Meilleur share', summary?.['Best Share']?.toLocaleString() || '—'],
+                    ['Erreurs matérielles', summary?.['Hardware Errors']?.toString() || '0'],
+                    ['Difficulté acceptée', summary?.['Difficulty Accepted']?.toFixed(0) || '—'],
+                    ['Difficulté rejetée', summary?.['Difficulty Rejected']?.toFixed(0) || '—'],
                     ['Firmware', data?.firmware || '—'],
                     ['Description', data?.description || '—'],
                   ].map(([label, value]) => (
@@ -1037,12 +1038,12 @@ export default function MinerDetailPage() {
                     />
                     <Sparkline
                       data={history.points.map((p) => p.tempAvg)}
-                      label="Temperature" unit="°C" color="#fb923c"
+                      label="Température" unit="°C" color="#fb923c"
                       currentValue={history.points[history.points.length - 1]?.tempAvg.toFixed(0)}
                     />
                     <Sparkline
                       data={history.points.map((p) => p.powerW)}
-                      label="Power" unit="W" color="#60a5fa"
+                      label="Conso" unit="W" color="#60a5fa"
                       currentValue={history.points[history.points.length - 1]?.powerW.toFixed(0)}
                     />
                   </div>
@@ -1052,10 +1053,10 @@ export default function MinerDetailPage() {
                 <div style={cardStyle}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                     {[
-                      { label: 'Avg Hashrate', value: `${history.stats.avgHashrate.toFixed(2)} TH/s` },
-                      { label: 'Avg Temp', value: `${history.stats.avgTemp.toFixed(1)}°C` },
-                      { label: 'Avg Power', value: `${history.stats.avgPower.toFixed(0)} W` },
-                      { label: 'Rejected', value: `${history.stats.rejectedTotal.toLocaleString()} (${history.stats.acceptedTotal + history.stats.rejectedTotal > 0 ? ((history.stats.rejectedTotal / (history.stats.acceptedTotal + history.stats.rejectedTotal)) * 100).toFixed(2) : '0'}%)` },
+                      { label: 'Hashrate moyen', value: `${history.stats.avgHashrate.toFixed(2)} TH/s` },
+                      { label: 'Temp moyenne', value: `${history.stats.avgTemp.toFixed(1)}°C` },
+                      { label: 'Conso moyenne', value: `${history.stats.avgPower.toFixed(0)} W` },
+                      { label: 'Rejetés', value: `${history.stats.rejectedTotal.toLocaleString()} (${history.stats.acceptedTotal + history.stats.rejectedTotal > 0 ? ((history.stats.rejectedTotal / (history.stats.acceptedTotal + history.stats.rejectedTotal)) * 100).toFixed(2) : '0'}%)` },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <div style={labelStyle}>{label}</div>
@@ -1067,7 +1068,7 @@ export default function MinerDetailPage() {
               </>
             ) : (
               <div style={{ ...cardStyle, textAlign: 'center', padding: 40, color: '#52525b' }}>
-                No telemetry data available for this time range.
+                Aucune donnée de télémétrie sur cette plage.
               </div>
             )}
           </>
@@ -1077,10 +1078,10 @@ export default function MinerDetailPage() {
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div>
-                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fafafa', margin: 0 }}>Event Timeline</h3>
-                <p style={{ fontSize: 12.5, color: '#71717a', margin: '6px 0 0' }}>System transitions, alerts, manual actions and auto-maintenance.</p>
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fafafa', margin: 0 }}>Historique des événements</h3>
+                <p style={{ fontSize: 12.5, color: '#71717a', margin: '6px 0 0' }}>Transitions système, alertes, actions manuelles et maintenance auto.</p>
               </div>
-              <span style={{ fontSize: 12, color: '#52525b' }}>{events.length} events</span>
+              <span style={{ fontSize: 12, color: '#52525b' }}>{events.length} événements</span>
             </div>
 
             {eventsLoading && events.length === 0 ? (
@@ -1088,7 +1089,7 @@ export default function MinerDetailPage() {
                 <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid #27272a', borderTopColor: '#f7931a', animation: 'spin 0.8s linear infinite' }} />
               </div>
             ) : events.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 40, color: '#52525b' }}>No events recorded yet for this miner.</div>
+              <div style={{ textAlign: 'center', padding: 40, color: '#52525b' }}>Aucun événement enregistré pour ce mineur.</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {events.map((event, index) => {
@@ -1121,10 +1122,10 @@ export default function MinerDetailPage() {
 
         {tab === 'settings' && (
           <div style={cardStyle}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fafafa', marginBottom: 18 }}>Miner Settings</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fafafa', marginBottom: 18 }}>Réglages du mineur</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                { label: 'Name', key: 'name' as const, placeholder: 'Miner name' },
+                { label: 'Nom', key: 'name' as const, placeholder: 'Nom du mineur' },
                 { label: 'Port', key: 'port' as const, placeholder: '4028' },
               ].map(({ label, key, placeholder }) => (
                 <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -1138,7 +1139,7 @@ export default function MinerDetailPage() {
             </div>
             <button onClick={saveSettings}
               style={{ marginTop: 18, padding: '9px 20px', background: '#f7931a', border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-              Save
+              Enregistrer
             </button>
           </div>
         )}

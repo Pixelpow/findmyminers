@@ -25,5 +25,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "superpowers", "agent", ".agents", ".aidesigner", ".sixth"]
+  "exclude": ["node_modules", "superpowers", "agent", ".agents", ".aidesigner", ".sixth", "release"]
 }

@@ -410,7 +410,7 @@ export default function SettingsPage() {
                   <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Version du dashboard actuellement déployée. Les mises à jour sont appliquées côté serveur et récupérées automatiquement.</p>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
                     <span style={{ fontSize: 13, color: 'var(--muted)' }}>Build du dashboard</span>
-                    <span style={{ fontSize: 13, color: 'var(--foreground)', fontWeight: 700 }}>{appVersion ? `v${appVersion}` : 'Unknown'}</span>
+                    <span style={{ fontSize: 13, color: 'var(--foreground)', fontWeight: 700 }}>{appVersion ? `v${appVersion}` : '—'}</span>
                   </div>
                 </section>
 
@@ -556,7 +556,7 @@ export default function SettingsPage() {
                     <div>
                       <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Role</label>
                       <select value={inviteRole} onChange={(event) => setInviteRole(event.target.value)} style={inputStyle}>
-                        <option>Member</option>
+                        <option>Membre</option>
                         <option>Admin</option>
                         <option>Owner</option>
                       </select>

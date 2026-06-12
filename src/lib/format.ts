@@ -50,17 +50,17 @@ export function fmt(value: number | undefined, digits = 2): string {
   return value.toFixed(digits);
 }
 
-/** Format a timestamp as a relative time string (e.g. "2h ago"). */
+/** Formate un timestamp en temps relatif (ex. « il y a 2 h »). */
 export function formatTime(ts: number): string {
   const date = new Date(ts);
   const now = new Date();
   const diff = now.getTime() - ts;
-  if (diff < 60_000) return 'Just now';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < 60_000) return 'à l’instant';
+  if (diff < 3_600_000) return `il y a ${Math.floor(diff / 60_000)} min`;
+  if (diff < 86_400_000) return `il y a ${Math.floor(diff / 3_600_000)} h`;
   if (date.toDateString() === now.toDateString())
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return `${date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 /** Format a timestamp as a locale date string. */

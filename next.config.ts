@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Produce a self-contained server bundle for small Docker images.
   output: 'standalone',
+  // Keep personal tooling and docs out of the standalone bundle
+  // (they would otherwise be traced into Docker images / the Windows zip).
+  outputFileTracingExcludes: {
+    '*': ['superpowers/**', '.agents/**', '.aidesigner/**', '.claude/**', 'agent/**', 'docs/**', 'release/**'],
+  },
 };
 
 export default nextConfig;

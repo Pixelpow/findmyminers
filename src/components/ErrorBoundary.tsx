@@ -25,10 +25,10 @@ export default class ErrorBoundary extends React.Component<Props, State> {
           minHeight: '50vh', padding: 32, color: 'var(--foreground)',
         }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: 'var(--danger)' }}>
-            Something went wrong
+            Une erreur est survenue
           </h2>
           <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 20, maxWidth: 420, textAlign: 'center' }}>
-            {this.state.error?.message || 'An unexpected error occurred.'}
+            {this.state.error?.message || 'Erreur inattendue.'}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
@@ -38,7 +38,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            Try again
+            Réessayer
           </button>
         </div>
       );

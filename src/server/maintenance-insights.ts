@@ -55,8 +55,8 @@ export function computeMaintenanceInsights(snapshots: MinerSnapshot[]): Maintena
     insights.push({
       id: 'thermal-drift',
       severity: temperatureRise >= 8 ? 'critical' : 'warning',
-      title: 'Thermal drift detected',
-      message: `Average temperature is up by ${temperatureRise.toFixed(1)}°C while hashrate stayed broadly stable. Airflow restriction or dust buildup is likely.`,
+      title: 'Dérive thermique détectée',
+      message: `Température moyenne en hausse de ${temperatureRise.toFixed(1)}°C alors que le hashrate est resté stable. Flux d'air obstrué ou encrassement probable.`,
     });
   }
 
@@ -64,8 +64,8 @@ export function computeMaintenanceInsights(snapshots: MinerSnapshot[]): Maintena
     insights.push({
       id: 'efficiency-drop',
       severity: efficiencyDropRatio >= 0.15 ? 'critical' : 'warning',
-      title: 'Efficiency degradation',
-      message: `Hashrate-per-watt is down by ${(efficiencyDropRatio * 100).toFixed(1)}% versus baseline. Check cooling, power mode and fan behavior.`,
+      title: 'Dégradation d’efficacité',
+      message: `Le hashrate par watt a baissé de ${(efficiencyDropRatio * 100).toFixed(1)}% par rapport à la baseline. Vérifie le refroidissement, le mode de puissance et la ventilation.`,
     });
   }
 
@@ -73,8 +73,8 @@ export function computeMaintenanceInsights(snapshots: MinerSnapshot[]): Maintena
     insights.push({
       id: 'hashrate-instability',
       severity: recentHashrateCv >= 0.2 ? 'critical' : 'warning',
-      title: 'Hashrate instability',
-      message: `Recent hashrate swings are elevated (${(recentHashrateCv * 100).toFixed(1)}% variation). This often points to thermal throttling, pool instability or borderline settings.`,
+      title: 'Hashrate instable',
+      message: `Les variations récentes de hashrate sont élevées (${(recentHashrateCv * 100).toFixed(1)}% de variation). Cela traduit souvent un throttling thermique, une pool instable ou des réglages limites.`,
     });
   }
 
@@ -82,8 +82,8 @@ export function computeMaintenanceInsights(snapshots: MinerSnapshot[]): Maintena
     insights.push({
       id: 'uptime-drop',
       severity: recentUptime < 0.8 ? 'critical' : 'warning',
-      title: 'Reliability drop',
-      message: `Pool uptime over the recent window fell to ${(recentUptime * 100).toFixed(1)}%, down from ${(baselineUptime * 100).toFixed(1)}%. Check network, pool failover and power stability.`,
+      title: 'Baisse de fiabilité',
+      message: `L'uptime pool sur la fenêtre récente est tombé à ${(recentUptime * 100).toFixed(1)}%, contre ${(baselineUptime * 100).toFixed(1)}% avant. Vérifie le réseau, le failover de pool et l'alimentation.`,
     });
   }
 
@@ -91,8 +91,8 @@ export function computeMaintenanceInsights(snapshots: MinerSnapshot[]): Maintena
     insights.push({
       id: 'healthy-baseline',
       severity: 'info',
-      title: 'No maintenance signal',
-      message: 'Recent thermal, efficiency and uptime patterns are stable against the miner baseline.',
+      title: 'Aucun signal de maintenance',
+      message: 'Thermique, efficacité et uptime récents sont stables par rapport à la baseline du mineur.',
     });
   }
 
