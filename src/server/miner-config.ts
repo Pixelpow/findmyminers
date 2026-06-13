@@ -44,6 +44,36 @@ export type NightSchedule = {
   workMode: string;
 };
 
+/** Palier d'overclock — voir `@/lib/overclock`. */
+export type OcTier = 'eco' | 'balanced' | 'turbo' | 'extreme';
+
+/** Créneau horaire appliquant un palier d'overclock à la flotte. */
+export type OcScheduleWindow = {
+  id: string;
+  label: string;
+  /** Heure locale de début (0-23). */
+  startHour: number;
+  /** Heure locale de fin (0-23) — peut passer minuit (start > end). */
+  endHour: number;
+  tier: OcTier;
+  /** Jours actifs (0 = dimanche … 6 = samedi). Vide = tous les jours. */
+  days: number[];
+  /** Force la ventilation (%) pendant le créneau (absorbe l'ancien mode nuit). */
+  fanPercent?: number;
+};
+
+/**
+ * Planification d'overclock : pilote freq/voltage (AxeOS) ou workmode (CGMiner)
+ * de toute la flotte selon l'heure. Appliquée côté serveur via le poll fleet.
+ * Remplace et absorbe l'ancien `nightSchedule`.
+ */
+export type OcSchedule = {
+  enabled: boolean;
+  /** Palier hors de tout créneau (par défaut). */
+  defaultTier: OcTier;
+  windows: OcScheduleWindow[];
+};
+
 export type DashboardConfig = {
   selectedMinerId: string;
   miners: MinerNode[];
@@ -57,6 +87,7 @@ export type DashboardConfig = {
     stabilityProfile: 'stabilite-auto' | 'anti-chaleur' | 'nettoyage-airflow' | 'silence-nuit';
   };
   nightSchedule?: NightSchedule;
+  ocSchedule?: OcSchedule;
   autoReboot?: { enabled: boolean };
   vacationMode?: { enabled: boolean };
   walletAddresses?: string[];
@@ -159,6 +190,9 @@ export async function updateDashboardConfig(partial: Partial<DashboardConfig>, o
     nightSchedule: partial.nightSchedule !== undefined
       ? { ...(current.nightSchedule || {}), ...partial.nightSchedule }
       : current.nightSchedule,
+    ocSchedule: partial.ocSchedule !== undefined
+      ? { ...(current.ocSchedule || { enabled: false, defaultTier: 'balanced', windows: [] }), ...partial.ocSchedule }
+      : current.ocSchedule,
     autoReboot: partial.autoReboot !== undefined
       ? { ...(current.autoReboot || { enabled: false }), ...partial.autoReboot }
       : current.autoReboot,

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { MoreVertical, Moon, Download, RotateCcw, PlaneTakeoff, Wallet, Plus, Trash2, Settings2, Users, Bot, ShieldAlert, Sliders } from 'lucide-react';
+import { MoreVertical, Download, RotateCcw, PlaneTakeoff, Wallet, Plus, Trash2, Settings2, Users, Bot, ShieldAlert, Sliders, Gauge } from 'lucide-react';
+import Link from 'next/link';
 import { useToast } from '@/components/ToastProvider';
 import { appCardStyle } from '@/lib/styles';
 
-type SettingsTab = 'general' | 'members' | 'agent' | 'night-mode' | 'automation' | 'wallets' | 'preferences';
+type SettingsTab = 'general' | 'members' | 'agent' | 'automation' | 'wallets' | 'preferences';
 type MembersTab = 'active' | 'pending';
 type AgentData = {
   type?: string;
@@ -39,15 +40,6 @@ type AppVersionResponse = {
   ts: number;
 };
 
-type NightSchedule = {
-  enabled: boolean;
-  startHour: number;
-  endHour: number;
-  fanPercent: number;
-  workMode: string;
-};
-
-
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -63,10 +55,8 @@ export default function SettingsPage() {
   const [agentPlatforms, setAgentPlatforms] = useState<Record<string, AgentPlatform>>({});
   const [appVersion, setAppVersion] = useState('');
   const [authUser, setAuthUser] = useState<{ name: string; email: string } | null>(null);
-  const [nightSchedule, setNightSchedule] = useState<NightSchedule>({ enabled: false, startHour: 22, endHour: 7, fanPercent: 40, workMode: '0' });
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [savingGeneral, setSavingGeneral] = useState(false);
-  const [savingNight, setSavingNight] = useState(false);
   const [savingAutomation, setSavingAutomation] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
   const [wallets, setWallets] = useState<Array<{ address: string; balanceBtc: number; error?: string | null }>>([]);
@@ -145,7 +135,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!router.isReady) return;
     const current = router.query.tab as string;
-    if (current && ['general', 'members', 'agent', 'night-mode', 'automation', 'wallets', 'preferences'].includes(current)) {
+    if (current && ['general', 'members', 'agent', 'automation', 'wallets', 'preferences'].includes(current)) {
       setTab(current as SettingsTab);
       return;
     }
@@ -172,7 +162,6 @@ export default function SettingsPage() {
         const res = await fetch('/api/miner/config');
         if (!res.ok) return;
         const config = await res.json();
-        if (config.nightSchedule) setNightSchedule(config.nightSchedule);
         setAutoRebootEnabled(!!config.autoReboot?.enabled);
         setVacationModeEnabled(!!config.vacationMode?.enabled);
       } catch { /* ignore */ }
@@ -250,18 +239,6 @@ export default function SettingsPage() {
       });
     } catch { /* ignore */ }
     finally { setSavingAutomation(false); toast('success', 'Automation settings saved'); }
-  };
-
-  const saveNightSchedule = async () => {
-    setSavingNight(true);
-    try {
-      await fetch('/api/miner/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nightSchedule }),
-      });
-    } catch { /* ignore */ }
-    finally { setSavingNight(false); toast('success', 'Night schedule saved'); }
   };
 
   const addWallet = async () => {
@@ -346,7 +323,6 @@ export default function SettingsPage() {
   const tabMeta: Array<{ id: SettingsTab; label: string; icon: React.ComponentType<{ style?: React.CSSProperties }> }> = [
     { id: 'general', label: 'Général', icon: Settings2 },
     { id: 'preferences', label: 'Préférences', icon: Sliders },
-    { id: 'night-mode', label: 'Mode nuit', icon: Moon },
     { id: 'automation', label: 'Automatisation', icon: RotateCcw },
     { id: 'wallets', label: 'Wallets', icon: Wallet },
     { id: 'members', label: 'Membres', icon: Users },
@@ -460,6 +436,17 @@ export default function SettingsPage() {
                 <div>
                   <button onClick={saveAutomation} disabled={savingAutomation} style={primaryButton}>{savingAutomation ? 'Enregistrement...' : 'Enregistrer'}</button>
                 </div>
+                <Link href="/overclock" style={{ textDecoration: 'none' }}>
+                  <section style={{ ...appCardStyle(28, '20px'), display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
+                    <div style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(247,147,26,0.12)', border: '1px solid rgba(247,147,26,0.22)' }}>
+                      <Gauge style={{ width: 20, height: 20, color: 'var(--accent-strong)' }} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <h3 style={{ margin: '0 0 4px', fontSize: 16, color: 'var(--foreground)' }}>Mode nuit &amp; planification</h3>
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>La réduction nocturne fait désormais partie de l’onglet Overclock : créneaux horaires, undervolt et profils par puce au même endroit.</p>
+                    </div>
+                  </section>
+                </Link>
               </>
             )}
 
@@ -488,54 +475,6 @@ export default function SettingsPage() {
                       </button>
                     </div>
                   ))}
-                </div>
-              </section>
-            )}
-
-            {tab === 'night-mode' && (
-              <section style={appCardStyle(28, '24px')}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <Moon style={{ width: 18, height: 18, color: '#c4b5fd' }} />
-                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)' }}>Planning nuit</h2>
-                </div>
-                <p style={{ margin: '0 0 18px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.65 }}>Réduit le bruit et la consommation pendant les heures calmes en passant les mineurs en profil réduit.</p>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--foreground)', marginBottom: 20 }}>
-                  <input type="checkbox" checked={nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, enabled: event.target.checked })} style={{ width: 16, height: 16, accentColor: '#c4b5fd' }} />
-                  Activer le planning nuit
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, opacity: nightSchedule.enabled ? 1 : 0.45 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Heure de début</label>
-                    <select value={nightSchedule.startHour} disabled={!nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, startHour: parseInt(event.target.value) })} style={inputStyle}>
-                      {Array.from({ length: 24 }, (_, index) => <option key={index} value={index}>{String(index).padStart(2, '0')}:00</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Heure de fin</label>
-                    <select value={nightSchedule.endHour} disabled={!nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, endHour: parseInt(event.target.value) })} style={inputStyle}>
-                      {Array.from({ length: 24 }, (_, index) => <option key={index} value={index}>{String(index).padStart(2, '0')}:00</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Ventilation (%)</label>
-                    <input type="number" min="0" max="100" disabled={!nightSchedule.enabled} value={nightSchedule.fanPercent} onChange={(event) => setNightSchedule({ ...nightSchedule, fanPercent: parseInt(event.target.value) || 0 })} style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Mode de fonctionnement</label>
-                    <select value={nightSchedule.workMode} disabled={!nightSchedule.enabled} onChange={(event) => setNightSchedule({ ...nightSchedule, workMode: event.target.value })} style={inputStyle}>
-                      <option value="0">Éco (basse conso)</option>
-                      <option value="1">Normal</option>
-                      <option value="2">Haute performance</option>
-                    </select>
-                  </div>
-                </div>
-                {nightSchedule.enabled && (
-                  <p style={{ margin: '18px 0 0', fontSize: 13, color: 'var(--muted)', lineHeight: 1.65 }}>
-                    Miners will switch to <strong style={{ color: '#ddd6fe' }}>{nightSchedule.workMode === '0' ? 'Low Power' : nightSchedule.workMode === '1' ? 'Normal' : 'High Performance'}</strong> mode with <strong style={{ color: '#ddd6fe' }}>{nightSchedule.fanPercent}%</strong> fan speed from <strong style={{ color: 'var(--foreground)' }}>{String(nightSchedule.startHour).padStart(2, '0')}:00</strong> to <strong style={{ color: 'var(--foreground)' }}>{String(nightSchedule.endHour).padStart(2, '0')}:00</strong>.
-                  </p>
-                )}
-                <div style={{ marginTop: 20 }}>
-                  <button onClick={saveNightSchedule} disabled={savingNight} style={primaryButton}>{savingNight ? 'Enregistrement...' : 'Enregistrer'}</button>
                 </div>
               </section>
             )}

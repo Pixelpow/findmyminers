@@ -19,6 +19,7 @@ import {
   Dices,
 } from 'lucide-react';
 import { buildFleetRecommendations, type AdvisorRecommendation } from '@/lib/advisor';
+import { TIER_META, type OcTier } from '@/lib/overclock';
 import { formatDiff, formatTime, fmtCompact } from '@/lib/format';
 import { useSmartPolling, getPollCache, setPollCache } from '@/lib/use-smart-polling';
 import { useToast } from '@/components/ToastProvider';
@@ -63,6 +64,7 @@ type FleetData = {
   };
   nightModeActive?: boolean;
   vacationMode?: boolean;
+  ocActiveTier?: { tier: OcTier; label: string; source: 'window' | 'default' } | null;
 };
 
 type ProfitPayload = {
@@ -472,7 +474,15 @@ export default function DashboardPage() {
           <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-white/[0.01] shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <h2 className="text-sm font-semibold text-slate-200 shrink-0">Mineurs actifs</h2>
-              {fleetData?.nightModeActive && (
+              {fleetData?.ocActiveTier ? (
+                <Link
+                  href="/overclock"
+                  className={`text-[9px] font-mono font-semibold border px-1.5 py-0.5 rounded ${TIER_META[fleetData.ocActiveTier.tier].chip} ${TIER_META[fleetData.ocActiveTier.tier].text}`}
+                  title={`Planification overclock active — palier ${TIER_META[fleetData.ocActiveTier.tier].label} (${fleetData.ocActiveTier.source === 'window' ? fleetData.ocActiveTier.label : 'hors créneau'})`}
+                >
+                  {TIER_META[fleetData.ocActiveTier.tier].emoji} {TIER_META[fleetData.ocActiveTier.tier].label.toUpperCase()}
+                </Link>
+              ) : fleetData?.nightModeActive && (
                 <span className="text-[9px] font-mono font-semibold border px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border-blue-500/20" title="Le planning nuit (ventilation / mode réduit) est actuellement appliqué">
                   🌙 MODE NUIT
                 </span>

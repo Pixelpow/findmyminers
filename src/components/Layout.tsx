@@ -12,6 +12,7 @@ import {
   LogOut,
   X,
   Pickaxe,
+  Gauge,
 } from 'lucide-react';
 import { buildFleetRecommendations, type AdvisorFleetMiner } from '@/lib/advisor';
 import { setPollCache } from '@/lib/use-smart-polling';
@@ -27,6 +28,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Découverte', href: '/discover', icon: Radar },
   { label: 'Tableau de bord', href: '/dashboard', icon: LayoutGrid },
+  { label: 'Overclock', href: '/overclock', icon: Gauge },
   { label: 'Conseiller', href: '/advisor', icon: Bot, badgeKey: 'criticalAdvice', badgeTone: 'blue' },
   { label: 'Pools', href: '/pools', icon: Droplet },
   { label: 'Records', href: '/records', icon: BarChart3 },
@@ -36,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
 const PAGE_TITLES: Record<string, string> = {
   dashboard: 'Tableau de bord',
   miners: 'Mineurs',
+  overclock: 'Overclock',
   advisor: 'Conseiller',
   pools: 'Pools',
   records: 'Records',

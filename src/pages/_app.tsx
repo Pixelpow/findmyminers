@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 // Pages that use the new Layout sidebar
-const LAYOUT_PAGES = ['/miners', '/pools', '/dashboard', '/advisor', '/settings', '/alerts', '/discover', '/records'];
+const LAYOUT_PAGES = ['/miners', '/pools', '/dashboard', '/advisor', '/settings', '/alerts', '/discover', '/records', '/overclock'];
 
 // Keyboard shortcut page map (1-based)
 const SHORTCUT_PAGES = ['/dashboard', '/miners', '/alerts', '/advisor', '/settings', '/pools', '/records', '/discover'];

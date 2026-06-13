@@ -9,6 +9,7 @@ import { recordDiffSample } from '@/server/miner-diff-db';
 import { notifyRecordDiffChanges } from '@/server/push-notifications';
 import { pollMiner, getDriverForMiner } from '@/server/drivers';
 import { ensureMinerProtocols } from '@/server/detect-protocols';
+import { enforceOcSchedule, activeTierForSchedule } from '@/server/overclock-scheduler';
 
 /**
  * In-memory tracking of when miners were last seen online (for auto-reboot).
@@ -116,6 +117,7 @@ async function buildFleetPayload(orgId: string) {
         let frequencyMHz = 0;
         let coreVoltageMV = 0;
         let fanRpm = 0;
+        let chipType = '';
         const minerKey = `${orgId}:${miner.id}`;
 
         if (live) {
@@ -125,6 +127,7 @@ async function buildFleetPayload(orgId: string) {
           poolUrl = live.poolUrl || '';
           accountKey = live.accountKey || '';
           if (live.model) model = live.model;
+          if (live.chipType) chipType = live.chipType;
           if (live.frequencyMHz) frequencyMHz = live.frequencyMHz;
           if (live.coreVoltageMV) coreVoltageMV = live.coreVoltageMV;
           if (live.fanRpm) fanRpm = live.fanRpm;
@@ -212,6 +215,7 @@ async function buildFleetPayload(orgId: string) {
           capabilities: driver.capabilities,
           managedBy: miner.managedBy || 'direct',
           model,
+          chipType: chipType || undefined,
           online,
           poolUrl,
           accountKey: accountKey || undefined,
@@ -271,6 +275,18 @@ async function buildFleetPayload(orgId: string) {
       }
     }
 
+    // Planification overclock : applique le palier actif sur changement
+    // (sans bloquer la réponse) et expose le palier en cours pour l'UI.
+    const ocActive = activeTierForSchedule(config.ocSchedule);
+    if (config.ocSchedule?.enabled && !config.vacationMode?.enabled) {
+      const chipByMiner: Record<string, string> = {};
+      enabledMiners.forEach((m, i) => {
+        const ct = liveResults[i]?.chipType;
+        if (ct) chipByMiner[m.id] = ct;
+      });
+      void enforceOcSchedule({ orgId, schedule: config.ocSchedule, miners: enabledMiners, chipByMiner });
+    }
+
     return {
       fleet,
       totals: {
@@ -287,6 +303,8 @@ async function buildFleetPayload(orgId: string) {
         bestShareFleet,
       },
       nightModeActive,
+      ocScheduleEnabled: config.ocSchedule?.enabled || false,
+      ocActiveTier: ocActive ? { tier: ocActive.tier, label: ocActive.label, source: ocActive.source } : null,
       vacationMode: config.vacationMode?.enabled || false,
       autoReboot: config.autoReboot?.enabled || false,
     };
