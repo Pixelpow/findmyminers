@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { buildFleetRecommendations, type AdvisorRecommendation } from '@/lib/advisor';
 import { TIER_META, type OcTier } from '@/lib/overclock';
-import { formatDiff, formatTime, fmtCompact } from '@/lib/format';
+import { formatDiff, formatTime, fmtCompact, fmtHash } from '@/lib/format';
 import { useSmartPolling, getPollCache, setPollCache } from '@/lib/use-smart-polling';
 import { useToast } from '@/components/ToastProvider';
 import { SmoothSpark, HealthGauge } from '@/components/nova-ui';
@@ -646,7 +646,7 @@ export default function DashboardPage() {
                         </td>
                         <td className="py-4 px-5 text-right">
                           <div className={`flex items-center justify-end gap-2 ${hrTone}`}>
-                            <span>{hr.toFixed(1)}</span>
+                            <span>{miner.online ? fmtHash(hr) : '—'}</span>
                             {miner.online ? (
                               <div className="w-10 h-1 bg-white/10 rounded-full overflow-hidden flex-shrink-0" title={`${ratio}% de la baseline`}>
                                 <div className={`h-full ${barTone}`} style={{ width: `${ratio}%` }} />

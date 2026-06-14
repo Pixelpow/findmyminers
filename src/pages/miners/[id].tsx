@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { MoreHorizontal, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { appCardStyle as baseCardStyle } from '@/lib/styles';
+import { fmtHash } from '@/lib/format';
 
 type MaintenanceInsight = {
   id: string;
@@ -350,7 +351,7 @@ export default function MinerDetailPage() {
   const pools = data?.pools || [];
   const activePool = pools.find((p: any) => p['Stratum Active']) || pools[0];
   const elapsed = summary?.Elapsed || 0;
-  const hrTHs = summary?.['MHS 1m'] ? (summary['MHS 1m'] / 1_000_000).toFixed(2) : '—';
+  const hrParts = summary?.['MHS 1m'] ? fmtHash(summary['MHS 1m'] / 1_000_000).split(' ') : null;
   const accepted = summary?.Accepted ?? 0;
   const rejected = summary?.Rejected ?? 0;
   const stale = summary?.Stale ?? 0;
@@ -590,7 +591,7 @@ export default function MinerDetailPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0 }}>
             <div style={{ borderRight: '1px solid var(--border-1)', paddingRight: 24 }}>
               <div style={labelStyle}>Hashrate</div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--foreground)' }}>{hrTHs} <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--muted)' }}>TH/s</span></div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--foreground)' }}>{hrParts ? <>{hrParts[0]} <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--muted)' }}>{hrParts[1]}</span></> : '—'}</div>
             </div>
             <div style={{ borderRight: '1px solid var(--border-1)', padding: '0 24px' }}>
               <div style={labelStyle}>Shares</div>

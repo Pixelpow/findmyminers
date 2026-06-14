@@ -22,8 +22,8 @@ const jetbrainsMono = JetBrains_Mono({
 // Pages that use the new Layout sidebar
 const LAYOUT_PAGES = ['/miners', '/pools', '/dashboard', '/advisor', '/settings', '/alerts', '/discover', '/records', '/overclock'];
 
-// Keyboard shortcut page map (1-based)
-const SHORTCUT_PAGES = ['/dashboard', '/miners', '/alerts', '/advisor', '/settings', '/pools', '/records', '/discover'];
+// Keyboard shortcut page map (1-based) — aligné sur l'ordre de la barre latérale
+const SHORTCUT_PAGES = ['/dashboard', '/overclock', '/pools', '/advisor', '/records', '/alerts', '/settings'];
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();

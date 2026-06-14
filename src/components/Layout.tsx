@@ -7,12 +7,12 @@ import {
   Droplet,
   BarChart3,
   Settings,
-  Radar,
   Menu,
   LogOut,
   X,
   Pickaxe,
   Gauge,
+  Twitter,
 } from 'lucide-react';
 import { buildFleetRecommendations, type AdvisorFleetMiner } from '@/lib/advisor';
 import { setPollCache } from '@/lib/use-smart-polling';
@@ -26,11 +26,13 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Découverte', href: '/discover', icon: Radar },
+  // Vue d'ensemble
   { label: 'Tableau de bord', href: '/dashboard', icon: LayoutGrid },
+  // Pilotage
   { label: 'Overclock', href: '/overclock', icon: Gauge },
-  { label: 'Conseiller', href: '/advisor', icon: Bot, badgeKey: 'criticalAdvice', badgeTone: 'blue' },
   { label: 'Pools', href: '/pools', icon: Droplet },
+  // Analyse
+  { label: 'Conseiller', href: '/advisor', icon: Bot, badgeKey: 'criticalAdvice', badgeTone: 'blue' },
   { label: 'Records', href: '/records', icon: BarChart3 },
 ];
 
@@ -312,6 +314,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-sm">Déconnexion</span>
             </button>
           )}
+          <a
+            href="https://x.com/pixel_pow"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="focus-ring flex items-center gap-2 px-3 pt-3 mt-1 text-slate-600 hover:text-btc-500 transition-colors"
+            title="Pixel sur X"
+          >
+            <Twitter className="w-[15px] h-[15px]" />
+            <span className="text-[11px]">par Pixel</span>
+          </a>
         </div>
       </aside>
 
