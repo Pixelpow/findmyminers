@@ -98,8 +98,8 @@ export default function AdvisorPage() {
 
       {/* Intro discrète */}
       <p className="text-sm text-slate-500 font-sans m-0 max-w-2xl">
-        Le conseiller analyse ta flotte en continu et met en avant ce qui mérite ton attention :
-        surchauffe, baisse de performance, mineurs hors ligne. Pas d&apos;alerte ici = rien à faire.
+        Ce qui mérite ton attention sur la flotte : surchauffe, baisse de hashrate, mineurs hors ligne.
+        Rien ici = tout va bien.
       </p>
 
       {/* Rangée KPI */}
@@ -164,10 +164,10 @@ export default function AdvisorPage() {
           </button>
         </div>
         <p className="text-xs text-slate-500 font-sans mt-0 mb-5 max-w-2xl">
-          Les problèmes détectés sur ta flotte, du plus urgent au moins urgent —
-          <span className="text-rose-400"> rouge</span> : agir maintenant,
-          <span className="text-amber-400"> orange</span> : à vérifier,
-          <span className="text-blue-400"> bleu</span> : simple suggestion.
+          Du plus urgent au moins urgent.
+          <span className="text-rose-400"> Rouge</span> : agir maintenant ·
+          <span className="text-amber-400"> orange</span> : à vérifier ·
+          <span className="text-blue-400"> bleu</span> : suggestion.
         </p>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 font-sans text-sm">
           {loading && [0, 1, 2].map((i) => <div key={i} className="nova-shimmer h-24 rounded-lg" />)}

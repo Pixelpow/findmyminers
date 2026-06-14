@@ -164,7 +164,17 @@ export const cgminerDriver: MinerDriver = {
         await cgminerCommandStrict(ip, port, 'ascset', `0,fan-spd,${value ?? ''}`);
         return;
       case 'mode':
-        await cgminerCommandStrict(ip, port, 'ascset', `0,workmode,${value ?? ''}`);
+        try {
+          await cgminerCommandStrict(ip, port, 'ascset', `0,workmode,${value ?? ''}`);
+        } catch (e) {
+          const m = e instanceof Error ? e.message : '';
+          // Certains firmwares Avalon (ex. Nano 3S / MM319) n'acceptent que workmode 0
+          // et rejettent tout changement via l'API — message clair plutôt que le brut.
+          if (/parameter error|unknown argument|missing|invalid modular/i.test(m)) {
+            throw new Error('Ce mineur n’accepte pas le changement de mode via l’API (firmware Avalon). Règle le mode depuis l’app ou l’écran du mineur.');
+          }
+          throw e;
+        }
         return;
       case 'target-temp':
         await cgminerCommandStrict(ip, port, 'ascset', `0,target-temp,${value ?? ''}`);

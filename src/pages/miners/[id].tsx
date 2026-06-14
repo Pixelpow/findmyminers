@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { MoreHorizontal, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { MoreHorizontal, ChevronDown, ChevronUp, RefreshCw, Fan, Leaf, Zap, Flame, Sparkles } from 'lucide-react';
 import { appCardStyle as baseCardStyle } from '@/lib/styles';
 import { fmtHash } from '@/lib/format';
 
@@ -418,9 +418,9 @@ export default function MinerDetailPage() {
   };
 
   const PERF_PRESETS = {
-    low: { value: '0', watt: 65, label: 'Éco', emoji: '🍃', desc: 'Silencieux · 65 W' },
-    normal: { value: '1', watt: 90, label: 'Normal', emoji: '⚡', desc: 'Standard · 90 W' },
-    high: { value: '2', watt: 140, label: 'Perf', emoji: '🔥', desc: 'Performance · 140 W' },
+    low: { value: '0', watt: 65, label: 'Éco', desc: 'Silencieux · 65 W' },
+    normal: { value: '1', watt: 90, label: 'Normal', desc: 'Standard · 90 W' },
+    high: { value: '2', watt: 140, label: 'Perf', desc: 'Performance · 140 W' },
   } as const;
 
   const setPerformanceProfile = async (preset: 'low' | 'normal' | 'high') => {
@@ -685,7 +685,7 @@ export default function MinerDetailPage() {
                       </div>
                     )}
                     <div style={{ fontSize: 11, color: '#52525b', marginTop: 2 }}>
-                      {autoMode ? '🤖 Auto' : fanMode ? `Manuel · ${FAN_LABELS[fanMode]}` : 'Manuel'}
+                      {autoMode ? 'Auto' : fanMode ? `Manuel · ${FAN_LABELS[fanMode]}` : 'Manuel'}
                     </div>
                   </div>
                 </div>
@@ -705,24 +705,25 @@ export default function MinerDetailPage() {
                   {(['low', 'medium', 'high'] as const).map((preset) => {
                     const active = !autoMode && fanMode === preset;
                     const colors = {
-                      low: { bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', text: '#60a5fa', emoji: '🌀' },
-                      medium: { bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.3)', text: '#fb923c', emoji: '💨' },
-                      high: { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', text: '#f87171', emoji: '🌪️' },
+                      low: { bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.35)', text: '#60a5fa' },
+                      medium: { bg: 'rgba(251,146,60,0.1)', border: 'rgba(251,146,60,0.35)', text: '#fb923c' },
+                      high: { bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.35)', text: '#f87171' },
                     };
                     const c = colors[preset];
                     return (
                       <button key={preset} onClick={() => setFanPreset(preset)} disabled={fanLoading}
                         style={{
-                          flex: 1, padding: '10px 0', borderRadius: 8, cursor: fanLoading ? 'not-allowed' : 'pointer',
+                          flex: 1, padding: '12px 0', borderRadius: 10, cursor: fanLoading ? 'not-allowed' : 'pointer',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                           fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
-                          background: active ? c.bg : '#09090b',
-                          border: `1.5px solid ${active ? c.border : '#27272a'}`,
-                          color: active ? c.text : '#71717a',
+                          background: active ? c.bg : '#0c0c0e',
+                          border: `1px solid ${active ? c.border : '#27272a'}`,
+                          color: active ? c.text : '#a1a1aa',
                           opacity: fanLoading ? 0.6 : 1,
                         }}>
-                        <span style={{ fontSize: 16 }}>{c.emoji}</span>
-                        <div style={{ marginTop: 2 }}>{FAN_LABELS[preset]}</div>
-                        <div style={{ fontSize: 10.5, fontWeight: 400, marginTop: 1, color: '#52525b' }}>
+                        <Fan size={17} strokeWidth={1.75} color={active ? c.text : '#71717a'} />
+                        <div>{FAN_LABELS[preset]}</div>
+                        <div style={{ fontSize: 11, fontWeight: 500, color: active ? c.text : '#52525b', opacity: active ? 0.8 : 1 }}>
                           {FAN_PRESETS[preset]}%
                         </div>
                       </button>
@@ -761,24 +762,25 @@ export default function MinerDetailPage() {
                     const active = perfMode === preset || (!perfMode && detectedPerfMode === preset);
                     const p = PERF_PRESETS[preset];
                     const colors = {
-                      low: { bg: 'rgba(74,222,128,0.12)', border: 'rgba(74,222,128,0.3)', text: '#4ade80' },
-                      normal: { bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.3)', text: '#fb923c' },
-                      high: { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', text: '#f87171' },
+                      low: { bg: 'rgba(74,222,128,0.1)', border: 'rgba(74,222,128,0.35)', text: '#4ade80', Icon: Leaf },
+                      normal: { bg: 'rgba(251,146,60,0.1)', border: 'rgba(251,146,60,0.35)', text: '#fb923c', Icon: Zap },
+                      high: { bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.35)', text: '#f87171', Icon: Flame },
                     };
                     const c = colors[preset];
                     return (
                       <button key={preset} onClick={() => setPerformanceProfile(preset)} disabled={perfLoading}
                         style={{
-                          flex: 1, padding: '10px 0', borderRadius: 8, cursor: perfLoading ? 'not-allowed' : 'pointer',
+                          flex: 1, padding: '12px 0', borderRadius: 10, cursor: perfLoading ? 'not-allowed' : 'pointer',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                           fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
-                          background: active ? c.bg : '#09090b',
-                          border: `1.5px solid ${active ? c.border : '#27272a'}`,
-                          color: active ? c.text : '#71717a',
+                          background: active ? c.bg : '#0c0c0e',
+                          border: `1px solid ${active ? c.border : '#27272a'}`,
+                          color: active ? c.text : '#a1a1aa',
                           opacity: perfLoading ? 0.6 : 1,
                         }}>
-                        <span style={{ fontSize: 16 }}>{p.emoji}</span>
-                        <div style={{ marginTop: 2 }}>{p.label}</div>
-                        <div style={{ fontSize: 10.5, fontWeight: 400, marginTop: 1, color: '#52525b' }}>
+                        <c.Icon size={17} strokeWidth={1.75} color={active ? c.text : '#71717a'} />
+                        <div>{p.label}</div>
+                        <div style={{ fontSize: 10.5, fontWeight: 500, marginTop: 1, color: '#52525b' }}>
                           {p.desc}
                         </div>
                       </button>
@@ -818,7 +820,7 @@ export default function MinerDetailPage() {
                       color: autoMode ? '#c084fc' : '#71717a',
                       opacity: autoLoading ? 0.6 : 1,
                     }}>
-                    <span style={{ fontSize: 18 }}>🤖</span>
+                    <Sparkles size={18} strokeWidth={1.75} color={autoMode ? '#c084fc' : '#71717a'} />
                     <div style={{ textAlign: 'left' }}>
                       <div>{autoMode ? 'Auto activé' : 'Activer Auto'}</div>
                       <div style={{ fontSize: 10.5, fontWeight: 400, color: '#52525b', marginTop: 1 }}>
@@ -901,7 +903,7 @@ export default function MinerDetailPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
                 <div style={{ background: '#0f0f12', border: '1px solid #27272a', borderRadius: 10, padding: '12px 14px' }}>
                   <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Meilleur diff du mineur</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#fafafa' }}>{fmtDiff(data?.diffRecords?.minerRecord?.bestDiff)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#fcd34d', textShadow: '0 0 10px rgba(245, 158, 11, 0.45)' }}>{fmtDiff(data?.diffRecords?.minerRecord?.bestDiff)}</div>
                   <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 4 }}>{data?.diffRecords?.minerRecord?.bestDiffAccountKey || 'Aucun compte'}</div>
                 </div>
                 <div style={{ background: '#0f0f12', border: '1px solid #27272a', borderRadius: 10, padding: '12px 14px' }}>
@@ -911,7 +913,7 @@ export default function MinerDetailPage() {
                 </div>
                 <div style={{ background: '#0f0f12', border: '1px solid #27272a', borderRadius: 10, padding: '12px 14px' }}>
                   <div style={{ fontSize: 11.5, color: '#71717a', marginBottom: 4 }}>Meilleur diff de la flotte</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#fafafa' }}>{fmtDiff(data?.diffRecords?.globalRecord?.bestDiff)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#fcd34d', textShadow: '0 0 10px rgba(245, 158, 11, 0.45)' }}>{fmtDiff(data?.diffRecords?.globalRecord?.bestDiff)}</div>
                   <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 4 }}>{data?.diffRecords?.globalRecord?.bestDiffMinerName || 'Aucun record flotte'}</div>
                 </div>
               </div>
@@ -931,7 +933,7 @@ export default function MinerDetailPage() {
                         <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 3 }}>{fmtWhen(record.updatedAt)}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 13, color: '#fafafa', fontWeight: 600 }}>{fmtDiff(record.bestDiff)}</div>
+                        <div style={{ fontSize: 13, color: '#fcd34d', fontWeight: 600 }}>{fmtDiff(record.bestDiff)}</div>
                         <div style={{ fontSize: 11.5, color: '#52525b', marginTop: 3 }}>{fmtWhen(record.bestDiffAt)}</div>
                       </div>
                       <div>

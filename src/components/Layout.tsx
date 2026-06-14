@@ -59,7 +59,7 @@ type FleetSummary = {
 type ProfitPayload = {
   totals?: { dailyNetEur?: number; monthlyNetEur?: number; dailyElecCostEur?: number; dailyGrossEur?: number };
   crypto?: { btcPriceEur?: number; btcPriceUsd?: number; difficulty?: number };
-  config?: { elecCostEurKwh?: number; poolFeePct?: number };
+  config?: { elecCostEurKwh?: number; poolFeePct?: number; showProfitability?: boolean };
 };
 
 const fmtEur0 = (n?: number) =>
@@ -212,6 +212,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const crypto = profit?.crypto;
   const profitConfig = profit?.config;
   const totals = profit?.totals;
+  const showProfit = profit?.config?.showProfitability ?? false;
 
   return (
     <div className="font-sans antialiased flex min-h-[100dvh] relative overflow-x-hidden bg-[#030304] text-slate-300">
@@ -383,30 +384,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Difficulté</span>
                 <span className="font-mono text-slate-200">{fmtDifficulty(crypto?.difficulty)}</span>
               </div>
-              <div className="w-px h-4 bg-white/10" />
-              <div className="flex items-baseline gap-2">
-                <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Est. flotte/jour</span>
-                <span className="font-mono text-emerald-400">{fmtEur0(totals?.dailyNetEur)}</span>
-              </div>
-              <div className="w-px h-4 bg-white/10" />
-              <div className="flex items-baseline gap-2">
-                <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Est. flotte/mois</span>
-                <span className="font-mono text-emerald-400">{fmtEur0(totals?.monthlyNetEur)}</span>
-              </div>
-              <div className="w-px h-4 bg-white/10" />
-              <div className="flex items-baseline gap-2">
-                <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Élec moy.</span>
-                <span className="font-mono text-slate-200">
-                  {profitConfig?.elecCostEurKwh !== undefined ? `€${profitConfig.elecCostEurKwh.toFixed(3)}/kWh` : '—'}
-                </span>
-              </div>
-              <div className="w-px h-4 bg-white/10" />
-              <div className="flex items-baseline gap-2">
-                <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Frais pool moy.</span>
-                <span className="font-mono text-slate-200">
-                  {profitConfig?.poolFeePct !== undefined ? `${profitConfig.poolFeePct}%` : '—'}
-                </span>
-              </div>
+              {showProfit && (
+                <>
+                  <div className="w-px h-4 bg-white/10" />
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Est. flotte/jour</span>
+                    <span className="font-mono text-emerald-400">{fmtEur0(totals?.dailyNetEur)}</span>
+                  </div>
+                  <div className="w-px h-4 bg-white/10" />
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Est. flotte/mois</span>
+                    <span className="font-mono text-emerald-400">{fmtEur0(totals?.monthlyNetEur)}</span>
+                  </div>
+                  <div className="w-px h-4 bg-white/10" />
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Élec moy.</span>
+                    <span className="font-mono text-slate-200">
+                      {profitConfig?.elecCostEurKwh !== undefined ? `€${profitConfig.elecCostEurKwh.toFixed(3)}/kWh` : '—'}
+                    </span>
+                  </div>
+                  <div className="w-px h-4 bg-white/10" />
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-slate-500 uppercase text-[10px] tracking-wider font-semibold">Frais pool moy.</span>
+                    <span className="font-mono text-slate-200">
+                      {profitConfig?.poolFeePct !== undefined ? `${profitConfig.poolFeePct}%` : '—'}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>

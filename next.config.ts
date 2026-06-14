@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   reactStrictMode: true,
+  // Masque le logo/indicateur de dev Next.js (n'apparaît qu'en `next dev`).
+  devIndicators: false,
   // Produce a self-contained server bundle for small Docker images.
   output: 'standalone',
   // Keep personal tooling and docs out of the standalone bundle

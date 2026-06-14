@@ -62,6 +62,8 @@ export default function SettingsPage() {
   const [wallets, setWallets] = useState<Array<{ address: string; balanceBtc: number; error?: string | null }>>([]);
   const [autoRebootEnabled, setAutoRebootEnabled] = useState(false);
   const [vacationModeEnabled, setVacationModeEnabled] = useState(false);
+  const [showProfitability, setShowProfitability] = useState(false);
+  const [savingProfit, setSavingProfit] = useState(false);
 
   // Notifications push navigateur (records, pannes, événements importants)
   const [pushSupported, setPushSupported] = useState(false);
@@ -164,6 +166,7 @@ export default function SettingsPage() {
         const config = await res.json();
         setAutoRebootEnabled(!!config.autoReboot?.enabled);
         setVacationModeEnabled(!!config.vacationMode?.enabled);
+        setShowProfitability(!!config.ui?.showProfitability);
       } catch { /* ignore */ }
     })();
 
@@ -239,6 +242,25 @@ export default function SettingsPage() {
       });
     } catch { /* ignore */ }
     finally { setSavingAutomation(false); toast('success', 'Automation settings saved'); }
+  };
+
+  const toggleProfitability = async () => {
+    const next = !showProfitability;
+    setShowProfitability(next);
+    setSavingProfit(true);
+    try {
+      await fetch('/api/miner/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ui: { showProfitability: next } }),
+      });
+      toast('success', next ? 'Estimations de rentabilité affichées' : 'Estimations de rentabilité masquées');
+    } catch {
+      setShowProfitability(!next);
+      toast('error', 'Échec de l’enregistrement');
+    } finally {
+      setSavingProfit(false);
+    }
   };
 
   const addWallet = async () => {
@@ -636,6 +658,37 @@ export default function SettingsPage() {
                           {pushBusy ? '...' : pushEnabled ? '✓ Activées — désactiver' : 'Activer'}
                         </button>
                       </div>
+                    </div>
+                  </div>
+                </section>
+                <section style={appCardStyle(28, '24px')}>
+                  <h2 style={{ margin: 0, fontSize: 22, color: 'var(--foreground)', marginBottom: 20 }}>Affichage</h2>
+                  <div style={{ padding: '16px 18px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>Estimations de rentabilité</div>
+                        <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                          Affiche le revenu estimé (jour/mois) dans le bandeau et le tableau de bord. Masqué par défaut, car peu pertinent en solo mining. En solo, la carte « Brut / jour » est remplacée par « Meilleur diff ».
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => void toggleProfitability()}
+                        disabled={savingProfit}
+                        style={{
+                          height: 36,
+                          padding: '0 16px',
+                          borderRadius: 12,
+                          border: showProfitability ? '1px solid rgba(74,222,128,0.3)' : '1px solid var(--border-1)',
+                          background: showProfitability ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.03)',
+                          color: showProfitability ? 'var(--success)' : 'var(--muted)',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          cursor: savingProfit ? 'not-allowed' : 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {savingProfit ? '...' : showProfitability ? '✓ Affichées — masquer' : 'Afficher'}
+                      </button>
                     </div>
                   </div>
                 </section>

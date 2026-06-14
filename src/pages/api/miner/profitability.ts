@@ -66,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       config: {
         elecCostEurKwh: config.profitability.elecCostEurKwh,
         poolFeePct: config.profitability.poolFeePct,
+        showProfitability: config.ui.showProfitability ?? false,
       },
     });
   } catch (error: any) {

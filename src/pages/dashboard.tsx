@@ -17,6 +17,7 @@ import {
   ChevronUp,
   ChevronDown,
   Dices,
+  Gauge,
 } from 'lucide-react';
 import { buildFleetRecommendations, type AdvisorRecommendation } from '@/lib/advisor';
 import { TIER_META, type OcTier } from '@/lib/overclock';
@@ -42,6 +43,7 @@ type FleetMiner = {
     poolAlive?: boolean;
     bestShare?: number;
     accepted?: number;
+    rejected?: number;
   } | null;
   stats?: {
     healthScore?: number;
@@ -70,7 +72,7 @@ type FleetData = {
 type ProfitPayload = {
   totals?: { dailyNetEur?: number; monthlyNetEur?: number; dailyElecCostEur?: number; dailyGrossEur?: number };
   crypto?: { btcPriceEur?: number; btcPriceUsd?: number; difficulty?: number };
-  config?: { elecCostEurKwh?: number; poolFeePct?: number };
+  config?: { elecCostEurKwh?: number; poolFeePct?: number; showProfitability?: boolean };
 };
 
 type AlertEvent = {
@@ -281,6 +283,9 @@ export default function DashboardPage() {
   const netDaily = profit?.totals?.dailyNetEur;
   const grossDaily = profit?.totals?.dailyGrossEur
     ?? (netDaily !== undefined ? netDaily + (profit?.totals?.dailyElecCostEur || 0) : undefined);
+  const showProfit = profit?.config?.showProfitability ?? false;
+  // Métrique clé du solo mining : le meilleur partage de la flotte (« ticket de loterie »).
+  const fleetBestDiff = fleet.reduce((max, m) => Math.max(max, m.latest?.bestShare || 0), 0);
 
   // Lignes du tableau : filtre + recherche, puis tri choisi (ou problèmes d'abord par défaut)
   const visibleFleet = useMemo(() => {
@@ -443,13 +448,25 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Daily Profit */}
+        {/* Brut / jour (rentabilité) ou Meilleur diff (solo) */}
         <div className="nova-glass p-5 flex flex-col justify-between group transition-transform hover:-translate-y-[1px]">
-          <div className="text-[10px] uppercase tracking-widest text-btc-500 font-semibold mb-4">Brut / jour</div>
-          <div className="font-mono text-3xl text-slate-100 font-bold tracking-tight">{fmtEur0(grossDaily)}</div>
-          <div className="text-[11px] font-mono text-slate-400 mt-3 pt-1 border-t border-white/5">
-            Net proj. : {netDaily !== undefined ? `${fmtEur0(netDaily)} / jour` : '—'}
-          </div>
+          {showProfit ? (
+            <>
+              <div className="text-[10px] uppercase tracking-widest text-btc-500 font-semibold mb-4">Brut / jour</div>
+              <div className="font-mono text-3xl text-slate-100 font-bold tracking-tight">{fmtEur0(grossDaily)}</div>
+              <div className="text-[11px] font-mono text-slate-400 mt-3 pt-1 border-t border-white/5">
+                Net proj. : {netDaily !== undefined ? `${fmtEur0(netDaily)} / jour` : '—'}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-[10px] uppercase tracking-widest text-amber-300/80 font-semibold mb-4">Meilleur diff</div>
+              <div className="font-mono text-3xl text-amber-300 glow-amber font-bold tracking-tight">{fleetBestDiff > 0 ? formatDiff(fleetBestDiff) : '—'}</div>
+              <div className="text-[11px] font-mono text-slate-400 mt-3 pt-1 border-t border-white/5">
+                Réseau : {profit?.crypto?.difficulty ? formatDiff(profit.crypto.difficulty) : '—'}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Active Alerts */}
@@ -517,6 +534,34 @@ export default function DashboardPage() {
               >
                 <SlidersHorizontal className="w-4 h-4" />
               </button>
+              <div className="w-px h-5 bg-white/10 mx-0.5" />
+              <button
+                type="button"
+                onClick={() => void runScan()}
+                disabled={scanning}
+                className="focus-ring p-1.5 rounded border bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+                aria-label="Scanner le réseau"
+                title="Scanner le réseau (ajout automatique)"
+              >
+                <Radar className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                type="button"
+                onClick={() => void refetch()}
+                className="focus-ring p-1.5 rounded border bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Rafraîchir"
+                title="Rafraîchir les données"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <Link
+                href="/overclock"
+                className="focus-ring p-1.5 rounded border bg-white/5 border-white/10 text-slate-400 hover:text-btc-500 hover:bg-white/10 transition-colors"
+                aria-label="Overclock"
+                title="Régler l'overclock de la flotte"
+              >
+                <Gauge className="w-4 h-4" />
+              </Link>
             </div>
           </div>
 
@@ -534,6 +579,7 @@ export default function DashboardPage() {
                     ['power', 'Conso', 'text-right'],
                     [null, 'RPM', 'text-right'],
                     [null, 'Diff', 'text-right'],
+                    [null, 'Shares', 'text-right'],
                     ['health', 'Santé', 'text-center'],
                   ] as [SortKey | null, string, string][]).map(([key, label, align]) => (
                     <th key={label} className={`py-4 px-5 font-semibold ${align}`}>
@@ -559,7 +605,7 @@ export default function DashboardPage() {
                 <tbody className="divide-y divide-white/[0.03]">
                   {[0, 1, 2, 3].map((i) => (
                     <tr key={i} className="nova-shimmer">
-                      <td className="py-4 px-4" colSpan={10}>
+                      <td className="py-4 px-4" colSpan={11}>
                         <div className={`h-4 bg-white/5 rounded ${i === 1 ? 'w-11/12' : i === 3 ? 'w-10/12' : 'w-full'}`} />
                       </td>
                     </tr>
@@ -568,7 +614,7 @@ export default function DashboardPage() {
               ) : total === 0 ? (
                 <tbody>
                   <tr>
-                    <td colSpan={10} className="py-24 text-center">
+                    <td colSpan={11} className="py-24 text-center">
                       <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-dashed border-slate-600 mb-4 bg-obsidian-950">
                         <Radar className="w-5 h-5 text-slate-500" />
                       </div>
@@ -589,7 +635,7 @@ export default function DashboardPage() {
                 <tbody className="divide-y divide-white/[0.03]">
                   {visibleFleet.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="py-12 text-center text-slate-500 font-sans text-xs">
+                      <td colSpan={11} className="py-12 text-center text-slate-500 font-sans text-xs">
                         Aucun mineur ne correspond à ce filtre.
                       </td>
                     </tr>
@@ -603,6 +649,8 @@ export default function DashboardPage() {
                     const power = miner.latest?.powerW || 0;
                     const rpm = miner.fanRpm || 0;
                     const diff = miner.latest?.bestShare || 0;
+                    const acc = miner.latest?.accepted || 0;
+                    const rej = miner.latest?.rejected || 0;
                     const poolAlive = miner.online && (miner.latest?.poolAlive ?? true);
                     const warn = miner.online && (temp >= 80 || (health > 0 && health < 60));
                     const tempTone = !miner.online ? 'text-slate-500'
@@ -661,9 +709,17 @@ export default function DashboardPage() {
                           </div>
                         </td>
                         <td className={`py-4 px-5 text-right ${tempTone}`}>{temp > 0 ? `${temp.toFixed(0)}°C` : '—'}</td>
-                        <td className={`py-4 px-5 text-right ${!miner.online ? 'text-slate-500' : 'text-slate-400'}`}>{power > 0 ? power.toFixed(0) : '0'}</td>
-                        <td className={`py-4 px-5 text-right ${!miner.online ? 'text-slate-500' : 'text-slate-400'}`}>{rpm > 0 ? rpm : '0'}</td>
-                        <td className="py-4 px-5 text-right text-slate-500">{diff > 0 ? formatDiff(diff) : '—'}</td>
+                        <td className={`py-4 px-5 text-right ${!miner.online ? 'text-slate-500' : 'text-slate-400'}`}>{power > 0 ? <>{power.toFixed(0)}<span className="text-slate-600"> W</span></> : '—'}</td>
+                        <td className={`py-4 px-5 text-right ${!miner.online ? 'text-slate-500' : 'text-slate-400'}`}>{rpm > 0 ? rpm.toLocaleString() : '—'}</td>
+                        <td className={`py-4 px-5 text-right font-semibold ${diff > 0 ? 'text-amber-300' : 'text-slate-500'}`}>{diff > 0 ? formatDiff(diff) : '—'}</td>
+                        <td className="py-4 px-5 text-right">
+                          {acc > 0 ? (
+                            <span className="inline-flex items-baseline justify-end gap-1">
+                              <span className={!miner.online ? 'text-slate-500' : 'text-emerald-400 glow-emerald'}>{fmtCompact(acc)}</span>
+                              {rej > 0 && <span className="text-rose-500/70 text-[11px]">/{fmtCompact(rej)}</span>}
+                            </span>
+                          ) : <span className="text-slate-500">—</span>}
+                        </td>
                         <td className="py-4 px-5">
                           <div className={`flex justify-center ${!miner.online ? 'opacity-50' : ''}`}>
                             <HealthGauge score={health} />

@@ -20,6 +20,7 @@ import {
   TIER_ORDER,
   TIER_META,
   CHIP_LABELS,
+  CHIP_MODELS,
   CHIP_FREQ_RANGE,
   CHIP_MAX_VOLTAGE,
   VOLTAGE_MIN_MV,
@@ -339,8 +340,8 @@ export default function OverclockPage() {
                 <Gauge className="w-5 h-5 text-btc-500" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-100">Overclock & undervolt de la flotte</h2>
-                <p className="text-[13px] text-slate-400">Règle fréquence et tension de tes mineurs, ou programme des paliers selon l’heure.</p>
+                <h2 className="text-lg font-semibold text-slate-100">Overclock & undervolt</h2>
+                <p className="text-[13px] text-slate-400">Règle la fréquence (hashrate) et la tension (stabilité) de tes mineurs, ou programme des paliers selon l’heure.</p>
               </div>
               {activeTier && (
                 <span className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${TIER_META[activeTier.tier].chip} ${TIER_META[activeTier.tier].text}`}>
@@ -349,9 +350,12 @@ export default function OverclockPage() {
                 </span>
               )}
             </div>
-            <p className="text-[13px] text-slate-400 leading-relaxed max-w-3xl">
-              Deux réglages par puce : la <strong className="text-slate-200">fréquence (MHz)</strong> pousse le hashrate, la <strong className="text-slate-200">tension (mV)</strong> stabilise les hautes fréquences. Les profils sont calibrés par puce, tension plafonnée à la limite 24/7. Monte par paliers et surveille la température.
-            </p>
+            <div className="flex items-start gap-2.5 rounded-xl border border-rose-500/25 bg-rose-500/[0.07] px-4 py-3 max-w-3xl">
+              <AlertTriangle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
+              <p className="text-[12.5px] text-rose-200/90 leading-relaxed">
+                <strong className="text-rose-300">Réglages avancés, à tes risques.</strong> Une tension trop élevée ou un refroidissement insuffisant peut réduire la durée de vie des puces, voire endommager définitivement ton mineur. N’utilise cette fonction que si tu sais ce que tu fais — tu restes responsable des valeurs appliquées. Monte par paliers et surveille la température.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -470,7 +474,8 @@ export default function OverclockPage() {
             <div className="space-y-5">
               {CHIP_ORDER.map((chip) => (
                 <div key={chip}>
-                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2">{CHIP_LABELS[chip]}</div>
+                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">{CHIP_LABELS[chip]}</div>
+                  <div className="text-[10.5px] text-slate-600 mb-2 leading-snug">{CHIP_MODELS[chip]}</div>
                   <div className="grid grid-cols-4 gap-2">
                     {profilesForChip(chip).map(({ tier, profile }) => {
                       const meta = TIER_META[tier];

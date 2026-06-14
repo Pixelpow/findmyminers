@@ -85,6 +85,8 @@ export type DashboardConfig = {
   ui: {
     alertProfile: 'custom' | 'silent' | 'standard' | 'aggressive';
     stabilityProfile: 'stabilite-auto' | 'anti-chaleur' | 'nettoyage-airflow' | 'silence-nuit';
+    /** Affiche les estimations de rentabilité (off par défaut — pensé solo mining). */
+    showProfitability?: boolean;
   };
   nightSchedule?: NightSchedule;
   ocSchedule?: OcSchedule;
@@ -120,6 +122,7 @@ const defaultConfig: DashboardConfig = {
   ui: {
     alertProfile: 'standard',
     stabilityProfile: 'stabilite-auto',
+    showProfitability: false,
   },
 };
 
@@ -186,6 +189,10 @@ export async function updateDashboardConfig(partial: Partial<DashboardConfig>, o
     profitability: {
       ...current.profitability,
       ...(partial.profitability || {}),
+    },
+    ui: {
+      ...current.ui,
+      ...(partial.ui || {}),
     },
     nightSchedule: partial.nightSchedule !== undefined
       ? { ...(current.nightSchedule || {}), ...partial.nightSchedule }

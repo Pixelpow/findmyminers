@@ -98,6 +98,15 @@ export const CHIP_LABELS: Record<ChipFamily, string> = {
   generic: 'AxeOS générique',
 };
 
+/** Modèles connus utilisant chaque puce — référence pour repérer son mineur. */
+export const CHIP_MODELS: Record<ChipFamily, string> = {
+  BM1370: 'Bitaxe Gamma 601 · Gamma Turbo · NerdQAxe++ · NerdOCTAXE-Gamma',
+  BM1368: 'Bitaxe Supra 602/601 · NerdQAxe+ · NerdHaxe',
+  BM1366: 'Bitaxe Ultra 401/204 · NerdAxe Ultra',
+  BM1397: 'Bitaxe Max 102 · NerdAxe / NerdMiner (legacy)',
+  generic: 'Mineur AxeOS non reconnu — valeurs prudentes par défaut',
+};
+
 /** Tension maximale recommandée en fonctionnement continu (mV). */
 export const CHIP_MAX_VOLTAGE: Record<ChipFamily, number> = {
   BM1370: 1300,
