@@ -176,7 +176,7 @@ export default function OverclockPage() {
       if (!res.ok) throw new Error(json.error || 'Échec');
       const ok = (json.results || []).filter((r: { ok: boolean }) => r.ok).length;
       const fail = (json.results || []).length - ok;
-      toast(fail ? 'warning' : 'success', `Palier ${TIER_META[selectedTier].label} appliqué — ${ok} OK${fail ? `, ${fail} en échec` : ''}`);
+      toast(fail ? 'warning' : 'success', `Palier ${TIER_META[selectedTier].label} appliqué : ${ok} OK${fail ? `, ${fail} en échec` : ''}`);
     } catch (error) {
       toast('error', error instanceof Error ? error.message : 'Application échouée');
     } finally {
@@ -327,7 +327,7 @@ export default function OverclockPage() {
 
   return (
     <>
-      <Head><title>Overclock | FindMyMiners</title></Head>
+      <Head><title>Overclock · FindMyMiners</title></Head>
 
       <div className="space-y-6">
         {/* Intro pédagogique */}
@@ -350,9 +350,7 @@ export default function OverclockPage() {
               )}
             </div>
             <p className="text-[13px] text-slate-400 leading-relaxed max-w-3xl">
-              Sur un Bitaxe, l’overclock = deux réglages par puce : la <strong className="text-slate-200">fréquence (MHz)</strong> qui augmente le hashrate,
-              et la <strong className="text-slate-200">tension (mV)</strong> qui stabilise les hautes fréquences au prix de plus de chaleur.
-              Les profils ci-dessous sont calibrés <strong className="text-slate-200">par puce</strong> (la tension est plafonnée à la limite 24/7) — monte par paliers et surveille la température.
+              Deux réglages par puce : la <strong className="text-slate-200">fréquence (MHz)</strong> pousse le hashrate, la <strong className="text-slate-200">tension (mV)</strong> stabilise les hautes fréquences. Les profils sont calibrés par puce, tension plafonnée à la limite 24/7. Monte par paliers et surveille la température.
             </p>
           </div>
         </section>
@@ -362,7 +360,7 @@ export default function OverclockPage() {
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-[18px] h-[18px] text-btc-500" />
             <h3 className="text-sm font-semibold text-slate-200">Application rapide</h3>
-            <span className="text-xs text-slate-500">— choisis un palier, applique-le à la sélection</span>
+            <span className="text-xs text-slate-500">choisis un palier, applique-le à la sélection</span>
           </div>
 
           {/* Sélecteur de palier */}
@@ -510,7 +508,7 @@ export default function OverclockPage() {
                   <label className="block text-[12px] text-slate-400 mb-1.5">Mineur</label>
                   <select value={manualId} onChange={(e) => setManualId(e.target.value)} className="focus-ring w-full bg-obsidian-950 border border-white/10 rounded-lg py-2 px-3 text-sm text-slate-200">
                     {freqVoltMiners.map((m) => (
-                      <option key={m.id} value={m.id} style={{ background: '#0a0a0c' }}>{m.name} — {detectChipFamily({ chipType: m.chipType, model: m.model })}</option>
+                      <option key={m.id} value={m.id} style={{ background: '#0a0a0c' }}>{m.name} · {detectChipFamily({ chipType: m.chipType, model: m.model })}</option>
                     ))}
                   </select>
                 </div>

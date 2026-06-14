@@ -49,7 +49,7 @@ export default function SettingsPage() {
   const [, setSavedOrgName] = useState('MiningFarm');
   const [membersTab, setMembersTab] = useState<MembersTab>('active');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('Member');
+  const [inviteRole, setInviteRole] = useState('Membre');
   const [agentData, setAgentData] = useState<AgentData | null>(null);
   const [agentVersion, setAgentVersion] = useState<string>('');
   const [agentPlatforms, setAgentPlatforms] = useState<Record<string, AgentPlatform>>({});
@@ -331,7 +331,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Head><title>Settings | FindMyMiners</title></Head>
+      <Head><title>Paramètres · FindMyMiners</title></Head>
       <div>
         <section style={{ display: 'grid', gridTemplateColumns: '260px minmax(0, 1fr)', gap: 16 }}>
           <aside className="glass-panel" style={{ padding: 12 }}>
@@ -401,8 +401,8 @@ export default function SettingsPage() {
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 13, color: '#fca5a5' }}>Confirmer ?</span>
-                      <button style={{ ...ghostButton, border: '1px solid rgba(248,113,113,0.22)', color: '#fecaca', background: 'rgba(248,113,113,0.08)' }} onClick={deleteOrg}>Yes, reset everything</button>
-                      <button style={ghostButton} onClick={() => setDeleteConfirm(false)}>Cancel</button>
+                      <button style={{ ...ghostButton, border: '1px solid rgba(248,113,113,0.22)', color: '#fecaca', background: 'rgba(248,113,113,0.08)' }} onClick={deleteOrg}>Oui, tout réinitialiser</button>
+                      <button style={ghostButton} onClick={() => setDeleteConfirm(false)}>Annuler</button>
                     </div>
                   )}
                 </section>
@@ -493,11 +493,11 @@ export default function SettingsPage() {
                       <input value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="teammate@example.com" style={inputStyle} />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Role</label>
+                      <label style={{ display: 'block', fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>Rôle</label>
                       <select value={inviteRole} onChange={(event) => setInviteRole(event.target.value)} style={inputStyle}>
                         <option>Membre</option>
                         <option>Admin</option>
-                        <option>Owner</option>
+                        <option>Propriétaire</option>
                       </select>
                     </div>
                     <button style={primaryButton} onClick={() => { if (inviteEmail) { toast('success', `Invitation envoyée à ${inviteEmail}`); setInviteEmail(''); } }}>Envoyer l’invitation</button>
@@ -506,7 +506,7 @@ export default function SettingsPage() {
                 <section style={appCardStyle(28, '24px')}>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
                     {(['active', 'pending'] as MembersTab[]).map((value) => (
-                      <button key={value} onClick={() => setMembersTab(value)} style={{ height: 36, padding: '0 14px', borderRadius: 999, border: membersTab === value ? '1px solid rgba(247,147,26,0.22)' : '1px solid var(--border-1)', background: membersTab === value ? 'rgba(247,147,26,0.12)' : 'rgba(255,255,255,0.03)', color: membersTab === value ? 'var(--accent-strong)' : 'var(--muted)', cursor: 'pointer', fontSize: 12.5, fontWeight: 700 }}>{value === 'active' ? 'Active Members' : 'Pending Invitations'}</button>
+                      <button key={value} onClick={() => setMembersTab(value)} style={{ height: 36, padding: '0 14px', borderRadius: 999, border: membersTab === value ? '1px solid rgba(247,147,26,0.22)' : '1px solid var(--border-1)', background: membersTab === value ? 'rgba(247,147,26,0.12)' : 'rgba(255,255,255,0.03)', color: membersTab === value ? 'var(--accent-strong)' : 'var(--muted)', cursor: 'pointer', fontSize: 12.5, fontWeight: 700 }}>{value === 'active' ? 'Membres actifs' : 'Invitations en attente'}</button>
                     ))}
                   </div>
                   {membersTab === 'active' && authUser && (
@@ -518,7 +518,7 @@ export default function SettingsPage() {
                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>{authUser.name}</div>
                         <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{authUser.email}</div>
                       </div>
-                      <span style={{ height: 30, padding: '0 12px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-1)', color: 'var(--foreground)', fontSize: 12.5, fontWeight: 700 }}>Owner</span>
+                      <span style={{ height: 30, padding: '0 12px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-1)', color: 'var(--foreground)', fontSize: 12.5, fontWeight: 700 }}>Propriétaire</span>
                       <button style={{ ...ghostButton, width: 40, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical style={{ width: 15, height: 15 }} /></button>
                     </div>
                   )}
@@ -538,7 +538,7 @@ export default function SettingsPage() {
                     </div>
                     {agentData && (
                       <span style={{ height: 34, padding: '0 12px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', background: agentData.online ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)', border: agentData.online ? '1px solid rgba(74,222,128,0.18)' : '1px solid rgba(248,113,113,0.18)', color: agentData.online ? 'var(--success)' : 'var(--danger)', fontSize: 12.5, fontWeight: 700 }}>
-                        {agentData.online ? 'Online' : 'Offline'}
+                        {agentData.online ? 'En ligne' : 'Hors ligne'}
                       </span>
                     )}
                   </div>
@@ -546,11 +546,11 @@ export default function SettingsPage() {
                     {agentData ? [
                       ['Type', agentData.type],
                       ['Version', agentData.version],
-                      ['Latest available', agentData.latestVersion || agentVersion || '—'],
-                      ['Platform', agentData.platform || '—'],
-                      ['Hostname', agentData.hostname],
-                      ['Public IP', agentData.publicIp],
-                      ['Local IP', agentData.localIp],
+                      ['Dernière dispo', agentData.latestVersion || agentVersion || '—'],
+                      ['Plateforme', agentData.platform || '—'],
+                      ['Nom d’hôte', agentData.hostname],
+                      ['IP publique', agentData.publicIp],
+                      ['IP locale', agentData.localIp],
                       ['Vu en ligne', agentData.lastSeen ? new Date(agentData.lastSeen).toLocaleString('fr-FR') : '—'],
                     ].map(([label, value]) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)' }}>
@@ -560,7 +560,7 @@ export default function SettingsPage() {
                     )) : <div style={{ fontSize: 13.5, color: 'var(--muted-2)' }}>Aucun agent connecté. Installe et relie l’agent pour voir son statut ici.</div>}
                     {agentData?.updateAvailable && (
                       <div style={{ padding: '14px 16px', borderRadius: 18, background: 'rgba(247,147,26,0.08)', border: '1px solid rgba(247,147,26,0.18)', color: 'var(--accent-strong)', fontSize: 13, fontWeight: 700 }}>
-                        Update available: v{agentData.latestVersion || agentVersion}. Download the latest binary and run the Windows service update script.
+                        Mise à jour disponible : v{agentData.latestVersion || agentVersion}. Télécharge le dernier binaire et lance le script de mise à jour du service Windows.
                       </div>
                     )}
                   </div>

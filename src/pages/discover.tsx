@@ -114,15 +114,19 @@ function StepChip({ active, done, label, number }: { active: boolean; done: bool
 }
 
 function capabilityLabel(miner: DiscoveredMiner) {
-  if (miner.source === 'axeos') return 'AxeOS HTTP';
-  if (miner.source === 'cgminer') return 'CGMiner TCP';
-  return 'Détecté';
+  switch (miner.source) {
+    case 'axeos': return 'AxeOS (HTTP)';
+    case 'antminer': return 'Antminer';
+    case 'whatsminer': return 'Whatsminer';
+    case 'cgminer': return 'CGMiner (Avalon…)';
+    default: return 'Détecté';
+  }
 }
 
 function recommendedProfile(miner: DiscoveredMiner) {
-  if ((miner.tempC || 0) >= 82) return 'Eco';
+  if ((miner.tempC || 0) >= 82) return 'Éco';
   if ((miner.powerW || 0) >= 120) return 'Équilibré';
-  return 'Performance';
+  return 'Turbo';
 }
 
 export default function DiscoverPage() {
@@ -155,6 +159,7 @@ export default function DiscoverPage() {
 
   const selectedMiners = useMemo(() => wizardMiners.filter((miner) => miner.selected && !miner.duplicate), [wizardMiners]);
   const duplicateCount = useMemo(() => wizardMiners.filter((miner) => miner.duplicate).length, [wizardMiners]);
+  const asicCount = useMemo(() => wizardMiners.filter((miner) => miner.deviceType === 'asic').length, [wizardMiners]);
   const bitaxeCount = useMemo(() => wizardMiners.filter((miner) => miner.deviceType === 'bitaxe').length, [wizardMiners]);
 
   const handleScan = async () => {
@@ -285,7 +290,7 @@ export default function DiscoverPage() {
 
   return (
     <>
-      <Head><title>Discover | FindMyMiners</title></Head>
+      <Head><title>Découverte · FindMyMiners</title></Head>
       <div style={{ maxWidth: 1180 }}>
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginBottom: 22 }}>
           <StepChip number={1} label="Scanner" active={step === 'scan'} done={step !== 'scan'} />
@@ -298,7 +303,7 @@ export default function DiscoverPage() {
           <StatCard label="Mineurs configurés" value={String(existingMiners.length)} sub="Déjà enregistrés dans cette organisation" accent="#6aa7ff" />
           <StatCard label="Découverts" value={String(wizardMiners.length)} sub="Dernier scan réseau" accent="#f59e0b" />
           <StatCard label="Prêts à ajouter" value={String(selectedMiners.length)} sub={duplicateCount ? `${duplicateCount} doublon${duplicateCount > 1 ? 's' : ''} ignoré${duplicateCount > 1 ? 's' : ''}` : 'Aucun doublon détecté'} accent="#4ade80" />
-          <StatCard label="Famille Bitaxe" value={String(bitaxeCount)} sub="Détectés via AxeOS ou CGMiner" accent="#fb7185" />
+          <StatCard label="ASIC / Bitaxe" value={`${asicCount} / ${bitaxeCount}`} sub="Antminer, Whatsminer, Avalon, Bitaxe" accent="#fb7185" />
         </div>
 
         <div style={{ ...appCardStyle(28, '20px 22px'), marginBottom: 18 }}>
@@ -348,8 +353,8 @@ export default function DiscoverPage() {
         {!scanning && step === 'scan' && wizardMiners.length === 0 && (
           <div style={{ ...appCardStyle(28, '46px 24px'), textAlign: 'center' }}>
             <ShieldCheck style={{ width: 30, height: 30, color: 'var(--accent-strong)', margin: '0 auto 12px' }} />
-            <div style={{ fontSize: 16, color: 'var(--foreground)', marginBottom: 6, fontWeight: 700 }}>Commence par un scan réseau guidé</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>L’assistant détecte les mineurs, ignore les doublons et les prépare à l’import.</div>
+            <div style={{ fontSize: 16, color: 'var(--foreground)', marginBottom: 6, fontWeight: 700 }}>Scanner le réseau</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Détecte les ASIC (Antminer, Whatsminer, Avalon) et les Bitaxe, ignore les doublons, prépare l’import.</div>
           </div>
         )}
 
@@ -362,7 +367,7 @@ export default function DiscoverPage() {
               </div>
               <button onClick={() => setWizardMiners((current) => current.map((miner) => miner.duplicate ? miner : { ...miner, selected: true }))}
                 style={ghostButton}>
-                Select all eligible
+                Tout sélectionner
               </button>
             </div>
 
@@ -388,7 +393,7 @@ export default function DiscoverPage() {
                         {miner.poolUrl && <span>{miner.poolUrl}</span>}
                       </div>
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}>Recommended: {recommendedProfile(miner)}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}>Profil conseillé : {recommendedProfile(miner)}</div>
                   </div>
                 </div>
               ))}

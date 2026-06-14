@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — keep secrets out, but ship the template
 .env*
+!.env.example
 
 # runtime data — contains secrets (auth hashes, VAPID private key),
 # telemetry history and the SQLite database. NEVER commit this.

@@ -10,9 +10,9 @@ export default function ProfitabilityPage() {
 
   return (
     <>
-      <Head><title>Redirecting | FindMyMiners</title></Head>
+      <Head><title>Redirection · FindMyMiners</title></Head>
       <div style={{ padding: '48px 32px', color: 'var(--muted)' }}>
-        Redirecting to the dashboard...
+        Redirection vers le tableau de bord…
       </div>
     </>
   );
