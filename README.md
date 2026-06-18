@@ -2,6 +2,11 @@
 
 # FindMyMiners
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/Pixelpow/findmyminers?include_prereleases&sort=semver)](https://github.com/Pixelpow/findmyminers/releases)
+![Self-hosted](https://img.shields.io/badge/self--hosted-LOCAL__MODE-FF9900)
+![Built with Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+
 Self-hosted dashboard to monitor and control your solo Bitcoin miners: Bitaxe,
 NerdAxe, Avalon Nano, and any AxeOS or CGMiner device. Open source, built for
 home miners. English UI by default, with a one-click FR/EN switch.

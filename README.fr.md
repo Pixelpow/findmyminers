@@ -2,6 +2,11 @@
 
 # FindMyMiners
 
+[![Licence : MIT](https://img.shields.io/badge/Licence-MIT-blue.svg)](LICENSE)
+[![Dernière release](https://img.shields.io/github/v/release/Pixelpow/findmyminers?include_prereleases&sort=semver)](https://github.com/Pixelpow/findmyminers/releases)
+![Auto-hébergé](https://img.shields.io/badge/auto--h%C3%A9berg%C3%A9-LOCAL__MODE-FF9900)
+![Construit avec Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+
 Dashboard auto-hébergé pour superviser et piloter vos mineurs Bitcoin solo :
 Bitaxe, NerdAxe, Avalon Nano et tout mineur AxeOS ou CGMiner. Open source,
 conçu pour le minage domestique. Interface en anglais par défaut, bouton FR/EN.
