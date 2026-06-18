@@ -1,0 +1,16 @@
+{
+  "name": "FindMyMiners",
+  "short_name": "Miners",
+  "description": "Home miner dashboard for monitoring, alerting and onboarding ASIC and Bitaxe devices.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48 32x32 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+.vscode
+agent
+superpowers
+.agents
+.aidesigner
+.sixth
+data
+*.tsbuildinfo
+npm-debug.log*
+.env*
+README.md
+docs

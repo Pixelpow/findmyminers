@@ -1,0 +1,65 @@
+name: Release
+
+# Publie l'image Docker (ghcr.io) + le zip Windows attaché à la release.
+# Déclenchement manuel uniquement (Actions désactivé sur ce compte pour l'instant).
+# Pour réactiver la release auto sur tag, remets le déclencheur push/tags ci-dessous.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            latest
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  windows-zip:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installation
+        run: npm ci
+
+      - name: Build du zip portable
+        run: powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Attacher le zip à la release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/FindMyMiners-win64.zip
+          generate_release_notes: true

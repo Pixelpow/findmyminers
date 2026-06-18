@@ -1,0 +1,31 @@
+name: CI
+
+# Déclenchement manuel uniquement (Actions désactivé sur ce compte pour l'instant).
+# Pour réactiver la CI auto, remets les déclencheurs push / pull_request ci-dessous.
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installation
+        run: npm ci
+
+      - name: Lint
+        run: npx eslint src
+
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
