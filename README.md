@@ -14,6 +14,8 @@ home miners. English UI by default, with a one-click FR/EN switch.
 It discovers the miners on your local network, watches them in real time, and
 lets you control the whole fleet from a single screen.
 
+![FindMyMiners dashboard](docs/screenshot.png)
+
 ## Features
 
 - **Real-time dashboard**: fleet KPIs, sortable table, 24h hashrate, per-miner reboot

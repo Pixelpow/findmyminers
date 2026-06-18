@@ -14,6 +14,8 @@ conçu pour le minage domestique. Interface en anglais par défaut, bouton FR/EN
 Il détecte les mineurs du réseau local, les surveille en temps réel et les
 pilote depuis une interface unique.
 
+![Tableau de bord FindMyMiners](docs/screenshot.png)
+
 ## Fonctionnalités
 
 - **Tableau de bord temps réel** : indicateurs de flotte, table triable,
